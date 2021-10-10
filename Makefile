@@ -16,7 +16,6 @@ all: setup $(TARGET) finish
 
 setup:
 	mkdir $(BIN)
-	echo $(OBJ_RULE)
 
 $(TARGET): $(OBJ_RULE)
 	$(CXX) $(CXXFLAGS) -o $@ *.o
