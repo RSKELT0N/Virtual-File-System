@@ -1,3 +1,4 @@
+#########################
 # variables
 #########################
 CXX      := g++ -std=gnu++14
@@ -9,7 +10,6 @@ BIN      := bin
 CPP       = $(wildcard $(SRC)/*.cpp)
 OBJ_RULE  = $(patsubst %.cpp, %.o, $(CPP)) #pattern, replacement, text
 #########################
-
 # make
 #########################
 all: setup $(TARGET) finish
@@ -25,7 +25,6 @@ $(TARGET): $(OBJ_RULE)
 finish:
 	mv *.o $(BIN)
 #########################
-
 # clean
 #########################
 clean:

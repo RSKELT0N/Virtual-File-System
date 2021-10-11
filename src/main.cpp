@@ -1,3 +1,4 @@
+#include "FAT32.h"
 #include <stdio.h>
 
 int main() {
