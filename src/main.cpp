@@ -1,7 +1,10 @@
-#include "FAT32.h"
 #include <stdio.h>
+#include <iostream>
 
 int main() {
-    printf("%s\n", "Hello World!");
+    FILE* out = fopen("test.txt", "wb+");
+    std::cout << out << "\n";
+    fclose(out);
+    std::cout << out << "\n";
     return 0;
 }

@@ -16,7 +16,6 @@ protected:
     virtual void rm(char* file) noexcept = 0;
     virtual void rm(char *file, const char* args, ...) noexcept = 0;
     virtual void cp(const path& src, const path& dst) noexcept = 0;
-
 };
 
 #endif //_IFS_H_
