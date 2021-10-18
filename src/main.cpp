@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <iostream>
 
+#include "FAT32.h"
+
 int main() {
-    FILE* out = fopen("test.txt", "wb+");
-    std::cout << out << "\n";
-    fclose(out);
-    std::cout << out << "\n";
+    IFS* fat32 = new FAT32("test.dat");
+    delete fat32;
     return 0;
 }

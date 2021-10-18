@@ -3,7 +3,7 @@
 #########################
 CXX      := g++ -std=gnu++14
 TARGET   := filesystem
-CXXFLAGS := -w
+CXXFLAGS :=
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := src
 BIN      := bin

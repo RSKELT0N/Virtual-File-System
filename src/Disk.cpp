@@ -47,7 +47,7 @@ DiskDriver::ret_t Disk::close() {
     return val == EOF ? ERROR : VALID;
 }
 
-DiskDriver::ret_t Disk::read_disk(void* ptr, const size_t& size, const uint32_t& amt) {
+DiskDriver::ret_t Disk::read(void* ptr, const size_t& size, const uint32_t& amt) {
     size_t ttl_amt = fread(ptr, size, amt, file);
 
     if(ttl_amt != amt)
@@ -56,7 +56,7 @@ DiskDriver::ret_t Disk::read_disk(void* ptr, const size_t& size, const uint32_t&
     return ttl_amt == amt ? VALID : ERROR;
 }
 
-DiskDriver::ret_t Disk::write_disk(const void *ptr, const size_t &size, const uint32_t &amt) {
+DiskDriver::ret_t Disk::write(const void *ptr, const size_t &size, const uint32_t &amt) {
     size_t ttl_amt = fwrite(ptr, size, amt, file);
 
     if(ttl_amt != amt)

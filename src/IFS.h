@@ -2,11 +2,10 @@
 #define _IFS_H_
 
 #include "Path.h"
-#include <string>
 
 class IFS {
 public:
-    IFS() = delete;
+    IFS();
     IFS(const IFS&) = delete;
     IFS(IFS&&) = delete;
 

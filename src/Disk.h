@@ -24,8 +24,8 @@ public:
     ret_t seek(const long& offset) override;
     ret_t truncate(const off_t& size) override;
     ret_t open(const char* pathname, const char* mode) override;
-    ret_t read_disk(void* ptr, const size_t& size, const uint32_t& amt) override;
-    ret_t write_disk(const void* ptr, const size_t& size, const uint32_t& amt) override;
+    ret_t read(void* ptr, const size_t& size, const uint32_t& amt) override;
+    ret_t write(const void* ptr, const size_t& size, const uint32_t& amt) override;
 
 public:
     FILE* get_file() const noexcept;
