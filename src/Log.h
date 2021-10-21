@@ -1,31 +1,28 @@
-#ifndef _LOG_H_
-#define _LOG_H_
+//
+// Created by Ryan Skelton on 01/10/2020.
+//
+
+#ifndef LOG_LOG_H
+#define LOG_LOG_H
 
 #include <iostream>
 #include <sstream>
 #include <ctime>
-#include <mutex>
 #include <fstream>
 #include <unordered_map>
-#include <unordered_set>
-#include <vector>
 
-#define DATE std::string((Log::getInstance()->getDate()))
-#define TIME std::string((Log::getInstance()->getTime()))
-#define DIR std::string("/Users/ryanskelton/Desktop/server_/")
-#define FILE_ std::string("Logs_")
-#define EXT std::string(".txt")
-#define LOG(__type__, __msg__) (Log::getInstance()->logger(__type__, __LINE__, __msg__, ""))
+#define LOG(type, msg) (Log::getInstance()->logger(type, __LINE__, msg, ""))
 
-class Log {
+class Log
+{
 public:
-    enum Type {
+    enum Type
+    {
         WARNING,
         INFO,
         MESSAGE,
         DEBUG,
-        ERROR,
-        SERVER
+        ERROR
     };
 
 public:
@@ -34,26 +31,20 @@ public:
     Log(const Log &) = delete;
     void operator=(const Log &) = delete;
     void logger(Type, int, std::string, std::string);
-    std::string getDate();
-    std::string getTime();
-    std::unordered_set<std::string> notPriority = {"/list"};
-    std::vector<std::string> split(std::string &str, char separator);
+
 private:
     Log() = default;
     static Log *logInstance;
-    void writeLog(std::string);
-    std::mutex Logging;
 
     std::unordered_map<Log::Type, std::string> typeMap = {
-            {std::make_pair(Type::WARNING, "WARNING")},
-            {std::make_pair(Type::INFO, "INFO")},
-            {std::make_pair(Type::MESSAGE, "MESSAGE")},
-            {std::make_pair(Type::DEBUG, "DEBUG")},
-            {std::make_pair(Type::ERROR, "ERROR")},
-            {std::make_pair(Type::SERVER, "SERVER")}
-    };
+        {std::make_pair(Log::WARNING, "WARNING")},
+        {std::make_pair(Log::INFO, "INFO")},
+        {std::make_pair(Log::MESSAGE, "MESSAGE")},
+        {std::make_pair(Log::DEBUG, "DEBUG")},
+        {std::make_pair(Log::ERROR, "ERROR")}};
 
-    struct Colours {
+    struct Colours
+    {
         const std::string RED = "\033[1;31m";
         const std::string GREEN = "\033[1;92m";
         const std::string YELLOW = "\033[1;93m";
@@ -64,6 +55,5 @@ private:
         const std::string RESET = "\033[1;0m";
     } colour;
 };
-
 
 #endif //LOG_LOG_H

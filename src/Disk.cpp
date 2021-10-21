@@ -30,9 +30,8 @@ size_t& Disk::get_addr() const noexcept {
 DiskDriver::ret_t Disk::open(const char *pathname, const char *mode) {
     this->file = fopen(pathname, mode);
 
-    if(file != NULL)
-        LOG(Log::INFO, "File descriptor for '" + std::string(pathname) + "' has been defined/opened.");
-    else LOG(Log::ERROR, "File descriptor could not be opened.");
+    if(file == NULL)
+        LOG(Log::ERROR, "File descriptor could not be opened.");
 
     return file == nullptr ? ERROR : VALID;
 }
@@ -42,7 +41,6 @@ DiskDriver::ret_t Disk::close() {
         LOG(Log::WARNING, "FD can't be closed, as it's not initialised");
 
     uint32_t val = fclose(get_file());
-    LOG(Log::INFO, "File descriptor has been closed");
 
     return val == EOF ? ERROR : VALID;
 }

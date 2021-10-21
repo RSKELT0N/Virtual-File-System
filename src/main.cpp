@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <iostream>
-
 #include "FAT32.h"
 
 int main() {

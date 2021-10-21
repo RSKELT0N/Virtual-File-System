@@ -3,7 +3,7 @@
 #########################
 CXX      := g++ -std=gnu++14
 TARGET   := filesystem
-CXXFLAGS :=
+CXXFLAGS := -w
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := src
 BIN      := bin
@@ -30,4 +30,5 @@ finish:
 clean:
 	rm -rf $(BIN)/
 	rm $(TARGET)
+	rm *.dat
 #########################

@@ -3,34 +3,42 @@
 
 #include "VFS.h"
 #include "Disk.h"
+#include <string.h>
+#include <vector>
 
+#define B(__size__)               (__size__ * 8)
 #define KB(__size__)              (__size__ * 1024)
 #define MB(__size__)              (__size__ * (1024 * 1024))
 #define CLUSTER_ADDR(__CLUSTER__) (KB(2) * __CLUSTER__)
 
+#define min(__a__, __b__) (__a__ < __b__) ? __a__ : __b__
 #define DISK_NAME_LENGTH (uint8_t)10
 #define DIR_NAME_LENGTH  (uint8_t)10
+#define UNDEF_START_CLUSTER -1
+#define DIRECTORY 1
+#define NON_DIRECTORY 0
 
 
 class FAT32 : public IFS {
 
 public:
      enum clu_values_t {
-        UNALLOCATED_CLUSTER = 0x0000,
-        BAD_CLUSTER         = 0xFFF7,
-        EOF_CLUSTER         = 0xFFF8,
-        ALLOCATED_CLUSTER   = 0x0001
+        UNALLOCATED_CLUSTER = 0x00,
+        BAD_CLUSTER         = 0xF7,
+        EOF_CLUSTER         = 0xF8,
+        ALLOCATED_CLUSTER   = 0x01
     };
 
 private:
 
     struct metadata_t {
-        const char* disk_name;
+        char disk_name[DISK_NAME_LENGTH];
         uint32_t disk_size;
+        uint32_t user_size;
         uint32_t cluster_size;
         uint32_t cluster_n;
 
-        metadata_t(const char* name, uint32_t& dsk_size, uint32_t& clu_size, uint32_t& clu_n);
+//        metadata_t(const char* name, uint32_t& dsk_size, uint32_t& clu_size, uint32_t& clu_n);
     } __attribute__((packed));
 
     typedef struct __attribute__((packed)) {
@@ -61,8 +69,7 @@ private:
     } dir_t;
 
 public:
-    FAT32();
-    FAT32(const char* disk_name);
+    explicit FAT32(const char* disk_name);
     ~FAT32();
 
     FAT32(const FAT32& tmp) = delete;
@@ -78,28 +85,39 @@ public:
 private:
     void init() noexcept;
     void set_up() noexcept;
+    void create_disk() noexcept;
     void load() noexcept;
 
     void define_superblock() noexcept;
     void define_fat_table() noexcept;
+    dir_t* init_dir(const uint32_t& start_cl, const uint32_t& parent_clu, const char* name) noexcept;
 
+    void store_superblock() noexcept;
+    void store_fat_table() noexcept;
+    void store_dir(dir_t& directory) noexcept;
+
+    uint32_t attain_clu() const noexcept;
+    uint32_t n_free_clusters(const uint32_t& req) const noexcept;
 
 private:
-    DiskDriver *disk;
-    std::vector<uint16_t>* fat_table;
-    dir_t* root;
-
-private:
-     const char* DISK_NAME;
+    const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t STORAGE_SIZE = MB(100);
-    static constexpr uint32_t CLUSTER_SIZE = KB(2);
-    static constexpr uint32_t CLUSTER_N    = STORAGE_SIZE - (sizeof(superblock_t) + sizeof(fat_table)) / CLUSTER_SIZE;
+    static constexpr size_t   USER_SPACE    = B(500);
+    static constexpr uint32_t CLUSTER_SIZE  = B(50);
+    static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
+    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint8_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x0000;
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
-    static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + sizeof(FAT_TABLE_START_ADDR);
+    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint8_t) * CLUSTER_AMT;
+    static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
+
+private:
+    Disk* m_disk;
+    superblock_t m_superblock;
+    uint8_t* m_fat_table;
+    dir_t* m_root;
 };
 
 #endif //_FAT32_H_
