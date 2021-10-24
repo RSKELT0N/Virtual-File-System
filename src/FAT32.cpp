@@ -7,8 +7,12 @@
          DISK_NAME = DEFAULT_DISK;
      else DISK_NAME = disk_name;
 
+     if(STORAGE_SIZE > (1ULL << 32)) {
+         LOG(Log::ERROR, "maximum storage can only be 4gb");
+     }
+
      m_disk      = new Disk();
-     m_fat_table = (uint8_t*)malloc(sizeof(uint8_t) * CLUSTER_AMT);
+     m_fat_table = (uint32_t *)malloc(sizeof(uint32_t) * CLUSTER_AMT);
      m_root      = (dir_t*)malloc(sizeof(dir_t));
 
     init();
@@ -29,13 +33,24 @@ void FAT32::init() noexcept {
  void FAT32::set_up() noexcept {
      define_superblock();
      define_fat_table();
-     m_root = init_dir(0xFF, 0xFF, "root");
+     m_root = init_dir(0, 0, "root");
 
      create_disk();
      store_superblock();
      store_fat_table();
-     store_dir(reinterpret_cast<dir_t &>(m_root));
+     store_dir(*m_root);
+     insert_dir(*m_root, "Documents");
      LOG(Log::INFO, "file system has been initialised.");
+//
+//     dir_t* root;
+//     m_disk->seek(ROOT_START_ADDR);
+//     m_disk->read(root, sizeof(dir_t), 1);
+//     fflush(m_disk->get_file());
+//
+//     dir_entry_t* entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * 3);
+//     m_disk->seek(ROOT_START_ADDR + sizeof(dir_header_t));
+//     m_disk->read((void*)&entries, sizeof(dir_entry_t), 3);
+//     fflush(m_disk->get_file());
  }
 
  void FAT32::create_disk() noexcept {
@@ -99,7 +114,7 @@ void FAT32::init() noexcept {
 
  void FAT32::store_fat_table() noexcept {
      m_disk->seek(m_superblock.fat_table_addr);
-     m_disk->write(m_fat_table, sizeof(uint8_t), (uint32_t)CLUSTER_AMT);
+     m_disk->write(m_fat_table, sizeof(uint32_t), (uint32_t)CLUSTER_AMT);
      fflush(m_disk->get_file());
  }
 
@@ -200,6 +215,39 @@ void FAT32::init() noexcept {
      store_fat_table();
  }
 
+ void FAT32::insert_dir(dir_t& curr_dir, const char *dir_name) noexcept {
+     dir_t* tmp;
+
+     tmp = init_dir(0, curr_dir.dir_header.start_cluster_index, dir_name);
+     store_dir(*tmp);
+
+     curr_dir.dir_header.dir_entry_amt += 1;
+
+     strcpy(curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt].dir_entry_name, dir_name);
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt].start_cluster_index = tmp->dir_header.start_cluster_index;
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt].is_directory = 1;
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt].dir_entry_size = sizeof(dir_t);
+
+     std::vector<uint32_t> alloc_clu;
+
+     uint32_t curr_clu = curr_dir.dir_header.start_cluster_index;
+     alloc_clu.push_back(curr_clu);
+
+     while(1) {
+         uint32_t next_clu = m_fat_table[curr_clu];
+         if(next_clu == EOF_CLUSTER)
+             break;
+         alloc_clu.push_back(next_clu);
+         curr_clu = next_clu;
+     }
+
+     for(int i = 0; i < alloc_clu.size(); i++) {
+         m_fat_table[alloc_clu[i]] = UNALLOCATED_CLUSTER;
+     }
+
+     store_dir(curr_dir);
+ }
+
  uint32_t FAT32::attain_clu() const noexcept {
      uint32_t rs = 0;
      for(int i = 0; i < CLUSTER_AMT; i++) {
@@ -222,7 +270,6 @@ void FAT32::init() noexcept {
      }
      return amt == req ? 1 : 0;
  }
-
 
 void FAT32::cp(const path &src, const path &dst) noexcept {
 

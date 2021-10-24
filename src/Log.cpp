@@ -48,4 +48,7 @@ void Log::logger(Type type, int lineNumber, std::string log, std::string col)
     ss << colour.RESET;
 
     std::cout << ss.str() << "\n";
+
+    if(type == Type::ERROR)
+        exit(EXIT_FAILURE);
 }

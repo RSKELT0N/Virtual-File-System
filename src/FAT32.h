@@ -9,9 +9,10 @@
 #define B(__size__)               (__size__ * 8)
 #define KB(__size__)              (__size__ * 1024)
 #define MB(__size__)              (__size__ * (1024 * 1024))
+#define GB(__size__)              (__size__ * (1024 * 1024 * 1024))
 #define CLUSTER_ADDR(__CLUSTER__) (KB(2) * __CLUSTER__)
 
-#define min(__a__, __b__) (__a__ < __b__) ? __a__ : __b__
+#define min(a,b) ((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH (uint8_t)10
 #define DIR_NAME_LENGTH  (uint8_t)10
 #define UNDEF_START_CLUSTER -1
@@ -23,10 +24,10 @@ class FAT32 : public IFS {
 
 public:
      enum clu_values_t {
-        UNALLOCATED_CLUSTER = 0x00,
-        BAD_CLUSTER         = 0xF7,
-        EOF_CLUSTER         = 0xF8,
-        ALLOCATED_CLUSTER   = 0x01
+        UNALLOCATED_CLUSTER = 0x0000000,
+        BAD_CLUSTER         = 0x00000FF7,
+        EOF_CLUSTER         = 0x00000FF8,
+        ALLOCATED_CLUSTER   = 0x00000001
     };
 
 private:
@@ -95,6 +96,7 @@ private:
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
+    void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
 
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
@@ -107,16 +109,16 @@ private:
     static constexpr uint32_t CLUSTER_SIZE  = B(50);
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint8_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x0000;
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
-    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint8_t) * CLUSTER_AMT;
+    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
     static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
 
 private:
     Disk* m_disk;
     superblock_t m_superblock;
-    uint8_t* m_fat_table;
+    uint32_t* m_fat_table;
     dir_t* m_root;
 };
 
