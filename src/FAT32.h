@@ -24,7 +24,7 @@ class FAT32 : public IFS {
 
 public:
      enum clu_values_t {
-        UNALLOCATED_CLUSTER = 0x0000000,
+        UNALLOCATED_CLUSTER = 0x00000000,
         BAD_CLUSTER         = 0x00000FF7,
         EOF_CLUSTER         = 0x00000FF8,
         ALLOCATED_CLUSTER   = 0x00000001
@@ -96,17 +96,25 @@ private:
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
+
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
+    void insert_file() noexcept;
+
+    dir_t* read_dir(const uint32_t& start_clu) noexcept;
 
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
+    std::vector<uint32_t> get_list_of_clu(const uint32_t& start_clu) noexcept;
+
+    void print_fat_table() const noexcept;
+    void print_dir(dir_t& dir) const noexcept;
 
 private:
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr size_t   USER_SPACE    = B(500);
-    static constexpr uint32_t CLUSTER_SIZE  = B(50);
+    static constexpr size_t   USER_SPACE    = 500;
+    static constexpr uint32_t CLUSTER_SIZE  = 60;
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;

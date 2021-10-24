@@ -7,8 +7,6 @@
 
 #include <iostream>
 #include <sstream>
-#include <ctime>
-#include <fstream>
 #include <unordered_map>
 
 #define LOG(type, msg) (Log::getInstance()->logger(type, __LINE__, msg, ""))
