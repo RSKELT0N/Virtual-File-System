@@ -7,9 +7,9 @@
 #include <vector>
 
 #define B(__size__)               (__size__ * 8)
-#define KB(__size__)              (__size__ * 1024)
-#define MB(__size__)              (__size__ * (1024 * 1024))
-#define GB(__size__)              (__size__ * (1024 * 1024 * 1024))
+#define KB(__size__)              (B(__size__) * 1024)
+#define MB(__size__)              (KB(__size__) * 1024)
+#define GB(__size__)              (MB(__size__) * 1024)
 #define CLUSTER_ADDR(__CLUSTER__) (KB(2) * __CLUSTER__)
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
@@ -113,8 +113,8 @@ private:
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr size_t   USER_SPACE    = 200;
-    static constexpr uint32_t CLUSTER_SIZE  = 25;
+    static constexpr uint32_t   USER_SPACE  = KB(1);
+    static constexpr uint32_t CLUSTER_SIZE  = B(60);
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
