@@ -40,9 +40,10 @@ void FAT32::init() noexcept {
      store_fat_table();
      store_dir(*m_root);
      insert_dir(*m_root, "Documents");
-     print_fat_table();
      dir_t* root = read_dir(0);
-     print_dir(*root);
+     if(root != nullptr)
+        print_dir(*root);
+     else LOG(Log::WARNING, "directory at cluster cannot be found");
 //     dir_t* doc = read_dir(1);
 //     print_dir(*doc);
      //LOG(Log::INFO, "file system has been initialised.");
@@ -115,8 +116,8 @@ void FAT32::init() noexcept {
 
  void FAT32::store_dir(dir_t& directory)  noexcept {
      // ensuring header data is able to fit within a cluster size
-     if(CLUSTER_SIZE < sizeof(directory.dir_header))
-         LOG(Log::ERROR, "Insufficient memory to store header data for directory");
+     if(CLUSTER_SIZE < sizeof(directory.dir_header) || CLUSTER_SIZE < sizeof(dir_entry_t))
+         LOG(Log::ERROR, "Insufficient memory to store header data/dir entry for directory");
 
      // //////////////////////////////////////////////////////////////////////////////////////////////
      // initialise variables for workout within cluster size
@@ -178,6 +179,7 @@ void FAT32::init() noexcept {
 
      if(!n_free_clusters(num_of_clu_needed)) {
          LOG(Log::WARNING, "remaining entries cannot be stored due to insufficient cluster amount");
+         LOG(Log::WARNING, "'" + std::string(directory.dir_header.dir_name) + "' directory cannot be stored within: '" + std::string(DISK_NAME) + "'");
          m_fat_table[first_clu_index] = UNALLOCATED_CLUSTER;
          return;
      }

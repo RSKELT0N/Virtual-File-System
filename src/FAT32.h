@@ -113,7 +113,7 @@ private:
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr size_t   USER_SPACE    = 500;
+    static constexpr size_t   USER_SPACE    = 200;
     static constexpr uint32_t CLUSTER_SIZE  = 25;
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 

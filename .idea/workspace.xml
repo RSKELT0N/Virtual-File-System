@@ -15,16 +15,10 @@
     <list default="true" id="99083acf-1d6e-4d8e-b220-60687b35f7aa" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bin/FAT32.o" beforeDir="false" afterPath="$PROJECT_DIR$/bin/FAT32.o" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/main.o" beforeDir="false" afterPath="$PROJECT_DIR$/bin/main.o" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/file122.dat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/disk.dat" beforeDir="false" afterPath="$PROJECT_DIR$/disk.dat" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/filesystem.exe" beforeDir="false" afterPath="$PROJECT_DIR$/filesystem.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/.idea/src.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/.idea/vcs.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/FAT32.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/FAT32.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,6 +96,12 @@
       <updated>1635123353238</updated>
       <workItem from="1635123354524" duration="180000" />
       <workItem from="1635123546513" duration="119000" />
+      <workItem from="1635124253122" duration="43000" />
+      <workItem from="1635124309376" duration="8000" />
+      <workItem from="1635124334002" duration="3000" />
+      <workItem from="1635124354190" duration="24000" />
+      <workItem from="1635124387448" duration="25000" />
+      <workItem from="1635159242049" duration="872000" />
     </task>
     <servers />
   </component>
