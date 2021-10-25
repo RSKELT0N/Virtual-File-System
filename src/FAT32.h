@@ -114,7 +114,7 @@ private:
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
     static constexpr size_t   USER_SPACE    = 500;
-    static constexpr uint32_t CLUSTER_SIZE  = 60;
+    static constexpr uint32_t CLUSTER_SIZE  = 25;
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
