@@ -39,11 +39,7 @@ void FAT32::init() noexcept {
      store_superblock();
      store_fat_table();
      store_dir(*m_root);
-     insert_dir(*m_root, "Documents");
-     dir_t* root = read_dir(0);
-     if(root != nullptr)
-        print_dir(*root);
-     else LOG(Log::WARNING, "directory at cluster cannot be found");
+     print_fat_table();
 //     dir_t* doc = read_dir(1);
 //     print_dir(*doc);
      //LOG(Log::INFO, "file system has been initialised.");
@@ -90,12 +86,12 @@ void FAT32::init() noexcept {
      tmp->dir_entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * tmp->dir_header.dir_entry_amt);
 
      strcpy(tmp->dir_entries[0].dir_entry_name, ".");
-     tmp->dir_entries[0].start_cluster_index = UNDEF_START_CLUSTER;
+     tmp->dir_entries[0].start_cluster_index = start_cl;
      tmp->dir_entries[0].is_directory = DIRECTORY;
      tmp->dir_entries[0].dir_entry_size = sizeof(tmp->dir_entries[0]);
 
      strcpy(tmp->dir_entries[1].dir_entry_name, "..");
-     tmp->dir_entries[1].start_cluster_index = UNDEF_START_CLUSTER;
+     tmp->dir_entries[1].start_cluster_index = parent_clu;
      tmp->dir_entries[1].is_directory = DIRECTORY;
      tmp->dir_entries[1].dir_entry_size = sizeof(tmp->dir_entries[1]);
 
@@ -141,11 +137,6 @@ void FAT32::init() noexcept {
      if(remain_entries > 0)
          amt_of_entry_per_clu = CLUSTER_SIZE / sizeof(dir_entry_t);
 
-     if(first_clu_index >= 2) {
-         directory.dir_entries[0].start_cluster_index = first_clu_index;
-         directory.dir_entries[1].start_cluster_index = first_clu_index;
-     }
-
      m_disk->seek(m_superblock.root_dir_addr + (first_clu_index * CLUSTER_SIZE));
      m_disk->write((void*)&directory.dir_header, sizeof(dir_header_t), 1);
      fflush(m_disk->get_file());
@@ -174,8 +165,10 @@ void FAT32::init() noexcept {
          return;
      }
 
-     if(amt_of_entry_per_clu % remain_entries > 0)
-         num_of_clu_needed++;
+     if(remain_entries > amt_of_entry_per_clu) {
+         if(remain_entries % amt_of_entry_per_clu > 0)
+             num_of_clu_needed++;
+     }
 
      if(!n_free_clusters(num_of_clu_needed)) {
          LOG(Log::WARNING, "remaining entries cannot be stored due to insufficient cluster amount");
@@ -189,19 +182,10 @@ void FAT32::init() noexcept {
      for(int i = 0; i < num_of_clu_needed; i++)
          clu_list[i] = attain_clu();
 
-     if(amt_of_entry_per_clu == 1) {
-         directory.dir_entries[0].start_cluster_index = clu_list[0];
-         directory.dir_entries[1].start_cluster_index = clu_list[1];
-     } else if(amt_of_entry_per_clu >= 2) {
-         directory.dir_entries[0].start_cluster_index = clu_list[0];
-         directory.dir_entries[1].start_cluster_index = clu_list[0];
-     }
-
-
      for(int i = 0; i < num_of_clu_needed - 1; i++) {
-         size_t addr_offset = (ROOT_START_ADDR + (clu_list[i] * CLUSTER_SIZE) + sizeof(dir_header_t));
+         size_t addr_offset = (ROOT_START_ADDR + (clu_list[i] * CLUSTER_SIZE));
 
-         m_disk->seek(addr_offset + (entries_written * sizeof(dir_entry_t)));
+         m_disk->seek(addr_offset);
          m_disk->write((void*)&directory.dir_entries[entries_written], sizeof(dir_entry_t), amt_of_entry_per_clu);
          fflush(m_disk->get_file());
          remain_entries -= amt_of_entry_per_clu;
@@ -213,7 +197,7 @@ void FAT32::init() noexcept {
      // write remaining entries towards last cluster
 
      m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[num_of_clu_needed - 1]));
-     m_disk->write((void*)&directory.dir_entries[directory.dir_header.dir_entry_amt - 1], sizeof(dir_entry_t), remain_entries);
+     m_disk->write((void*)&directory.dir_entries[entries_written], sizeof(dir_entry_t), remain_entries);
      fflush(m_disk->get_file());
      // /////////////////////////////////////////////////////////////////////////////////////////////
      // fill in fat_table
@@ -224,7 +208,6 @@ void FAT32::init() noexcept {
      m_fat_table[clu_list[num_of_clu_needed - 1]] = EOF_CLUSTER;
      // /////////////////////////////////////////////////////////////////////////////////////////////
      // free heap allocated memory and store unsaved structures onto disk
-
      free(clu_list);
      store_fat_table();
  }
@@ -298,8 +281,10 @@ void FAT32::init() noexcept {
 
      uint32_t amt_of_clu_used = remain_entries / amt_of_entries_per_clu;
 
-     if(remain_entries % amt_of_entries_per_clu > 0)
-         amt_of_clu_used += 1;
+     if(remain_entries > amt_of_entries_per_clu) {
+         if(remain_entries % amt_of_entries_per_clu > 0)
+             amt_of_clu_used++;
+     }
 
      //move towards next clu
      uint32_t curr_clu = start_clu;
@@ -308,14 +293,14 @@ void FAT32::init() noexcept {
      for(int i = 0; i < amt_of_clu_used - 1; i++) {
          size_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
 
-         m_disk->seek(addr_offset + (entries_read * sizeof(dir_entry_t)));
+         m_disk->seek(addr_offset);
          m_disk->read((void*)&ret->dir_entries[entries_read], sizeof(dir_entry_t), amt_of_entries_per_clu);
          fflush(m_disk->get_file());
          entries_read += amt_of_entries_per_clu;
          curr_clu = m_fat_table[curr_clu];
      }
 
-     uint32_t remain_entries_in_lst_clu = abs(entries_read - remain_entries);
+     uint32_t remain_entries_in_lst_clu = abs(ret->dir_header.dir_entry_amt - entries_read);
 
      m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
      m_disk->read((void*)&ret->dir_entries[entries_read], sizeof(dir_entry_t), remain_entries_in_lst_clu);

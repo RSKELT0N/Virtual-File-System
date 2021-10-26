@@ -15,7 +15,7 @@
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH (uint8_t)10
 #define DIR_NAME_LENGTH  (uint8_t)10
-#define UNDEF_START_CLUSTER -1
+#define UNDEF_START_CLUSTER 0
 #define DIRECTORY 1
 #define NON_DIRECTORY 0
 
@@ -113,12 +113,12 @@ private:
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t   USER_SPACE  = KB(1);
-    static constexpr uint32_t CLUSTER_SIZE  = B(60);
+    static constexpr uint32_t   USER_SPACE  = B(200);
+    static constexpr uint32_t CLUSTER_SIZE  = 80;
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
-    static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x0000;
+    static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
     static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
     static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
