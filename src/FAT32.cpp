@@ -39,9 +39,10 @@ void FAT32::init() noexcept {
      store_superblock();
      store_fat_table();
      store_dir(*m_root);
-     print_fat_table();
-//     dir_t* doc = read_dir(1);
-//     print_dir(*doc);
+     insert_dir(*m_root, "Documents");
+     insert_file(*m_root, "C:/Users/Ryan/Documents/text.txt");
+     dir_t* doc = read_dir(0);
+     print_dir(*doc);
      //LOG(Log::INFO, "file system has been initialised.");
  }
 
@@ -218,27 +219,10 @@ void FAT32::init() noexcept {
      tmp = init_dir(UNDEF_START_CLUSTER, curr_dir.dir_header.start_cluster_index, dir_name);
      store_dir(*tmp);
 
-     curr_dir.dir_header.dir_entry_amt += 1;
-     dir_entry_t* tmp_entries = curr_dir.dir_entries;
-     curr_dir.dir_entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * curr_dir.dir_header.dir_entry_amt);
-
-     for(int i = 0; i < curr_dir.dir_header.dir_entry_amt - 1; i++) {
-         curr_dir.dir_entries[i] = tmp_entries[i];
-     }
-     strcpy(curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].dir_entry_name, dir_name);
-     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].start_cluster_index = tmp->dir_header.start_cluster_index;
-     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].is_directory = 1;
-     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].dir_entry_size = sizeof(dir_t);
-
-     std::vector<uint32_t> alloc_clu = get_list_of_clu(curr_dir.dir_header.start_cluster_index);
-
-     for(int i = 0; i < alloc_clu.size(); i++) {
-         m_fat_table[alloc_clu[i]] = UNALLOCATED_CLUSTER;
-     }
+     add_new_entry(curr_dir, dir_name, tmp->dir_header.start_cluster_index, sizeof(tmp), 1);
 
      store_dir(curr_dir);
      delete tmp;
-     delete tmp_entries;
  }
 
  FAT32::dir_t* FAT32::read_dir(const uint32_t& start_clu) noexcept {
@@ -309,6 +293,110 @@ void FAT32::init() noexcept {
      return ret;
  }
 
+FAT32::file_ret FAT32::store_file(const char *path) noexcept {
+     if(access(path, F_OK) == -1) {
+         LOG(Log::WARNING, "file specified does not exist");
+     }
+
+     char buffer[CLUSTER_SIZE];
+     uint32_t first_cluster = 0;
+     FILE* file = get_file_handlr(path);
+     off_t fsize = lseek(fileno(file), 0, SEEK_END);
+     size_t data_read = 0;
+
+     uint32_t amt_of_clu_needed = 0;
+
+     if(fsize < CLUSTER_SIZE)
+         amt_of_clu_needed = 1;
+     else amt_of_clu_needed = fsize / CLUSTER_SIZE;
+
+     if(amt_of_clu_needed == 1) {
+         first_cluster = attain_clu();
+         char buffer[fsize];
+
+         fseek(file, 0, SEEK_SET);
+         fread((void*)&buffer, sizeof(buffer), 1, file);
+         data_read += fsize;
+         fflush(file);
+
+         m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * first_cluster));
+         m_disk->write((void*)&buffer, sizeof(buffer), 1);
+         fflush(m_disk->get_file());
+
+         fclose(file);
+         return file_ret(first_cluster, file);
+     }
+
+     if(fsize % CLUSTER_SIZE > 0)
+         amt_of_clu_needed += 1;
+
+     if(!n_free_clusters(amt_of_clu_needed)) {
+         LOG(Log::WARNING, "amount of cluster needed isn't available to store file");
+         fclose(file);
+         return file_ret(-1, nullptr);
+     }
+
+     uint32_t* clu_list = (uint32_t*)malloc(sizeof(uint32_t) * amt_of_clu_needed);
+
+     for(int i = 0; i < amt_of_clu_needed; i++)
+         clu_list[i] = attain_clu();
+
+     first_cluster = clu_list[0];
+
+     for(int i = 0; i < amt_of_clu_needed - 1; i++) {
+         size_t off_adr = ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[i]);
+
+         fseek(file, data_read, SEEK_SET);
+         fread((void*)&buffer, sizeof(buffer), 1, file);
+         fflush(file);
+
+         m_disk->seek(off_adr);
+         m_disk->write((void*)&buffer, CLUSTER_SIZE, 1);
+         fflush(m_disk->get_file());
+
+         data_read += CLUSTER_SIZE;
+     }
+
+     size_t remaining_data = abs(fsize - data_read);
+
+     fseek(file, data_read, SEEK_SET);
+     fread((void*)&buffer, remaining_data, 1, file);
+     fflush(file);
+
+     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[amt_of_clu_needed - 1]));
+     m_disk->write((void*)&buffer, remaining_data, 1);
+     fflush(m_disk->get_file());
+
+     free(clu_list);
+     return file_ret(first_cluster, file);
+ }
+
+ void FAT32::insert_file(dir_t& curr_dir, const char* path) noexcept {
+     auto [clu, fd] = store_file(path);
+
+     if(clu == -1) {
+         LOG(Log::WARNING, "file could not be stored");
+         return;
+     }
+
+     std::string file_name;
+
+     for(int i = sizeof(path) - 1; i >= 0; i--) {
+        file_name += path[i];
+        if(path[i] == '\0' || path[i] == '/')
+            break;
+     }
+
+    add_new_entry(curr_dir, file_name.c_str(), clu, lseek(fileno(fd), 0, SEEK_END), 1);
+    store_dir(curr_dir);
+    fclose(fd);
+ }
+
+ FILE* FAT32::get_file_handlr(const char* file) noexcept {
+     FILE* handlr = fopen(file, "rb+");
+     return handlr;
+ }
+
  uint32_t FAT32::attain_clu() const noexcept {
      uint32_t rs = 0;
      for(int i = 0; i < CLUSTER_AMT; i++) {
@@ -348,7 +436,30 @@ void FAT32::init() noexcept {
      return alloc_clu;
  }
 
-void FAT32::cp(const path &src, const path &dst) noexcept {
+ void FAT32::add_new_entry(dir_t& curr_dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept {
+
+     curr_dir.dir_header.dir_entry_amt += 1;
+     dir_entry_t* tmp_entries = curr_dir.dir_entries;
+     curr_dir.dir_entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * curr_dir.dir_header.dir_entry_amt);
+
+     for(int i = 0; i < curr_dir.dir_header.dir_entry_amt - 1; i++) {
+         curr_dir.dir_entries[i] = tmp_entries[i];
+     }
+     strcpy(curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].dir_entry_name, name);
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].start_cluster_index = start_clu;
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].is_directory = is_dir;
+     curr_dir.dir_entries[curr_dir.dir_header.dir_entry_amt-1].dir_entry_size = size;
+
+     std::vector<uint32_t> alloc_clu = get_list_of_clu(curr_dir.dir_header.start_cluster_index);
+
+     for(int i = 0; i < alloc_clu.size(); i++) {
+         m_fat_table[alloc_clu[i]] = UNALLOCATED_CLUSTER;
+     }
+
+     delete tmp_entries;
+ }
+
+ void FAT32::cp(const char* src, const char* dst) noexcept {
 
 }
 
@@ -356,7 +467,7 @@ void FAT32::mkdir(char *dir) const noexcept {
 
 }
 
-void FAT32::cd(const path &pth) const noexcept {
+void FAT32::cd(const char* pth) const noexcept {
 
 }
 
@@ -380,6 +491,11 @@ void FAT32::print_fat_table() const noexcept {
  }
 
  void FAT32::print_dir(dir_t &dir) const noexcept {
+     if((dir_t*)&dir == NULL) {
+         LOG(Log::WARNING, "specified directory to be printed is null");
+         return;
+     }
+
      printf("Directory:        %s\n", dir.dir_header.dir_name);
      printf("Start cluster:    %d\n", dir.dir_header.start_cluster_index);
      printf("Parent cluster:   %d\n", dir.dir_header.parent_cluster_index);

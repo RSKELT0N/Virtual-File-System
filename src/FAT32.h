@@ -6,7 +6,7 @@
 #include <string.h>
 #include <vector>
 
-#define B(__size__)               (__size__ * 8)
+#define B(__size__)               (__size__)
 #define KB(__size__)              (B(__size__) * 1024)
 #define MB(__size__)              (KB(__size__) * 1024)
 #define GB(__size__)              (MB(__size__) * 1024)
@@ -28,6 +28,13 @@ public:
         BAD_CLUSTER         = 0x00000FF7,
         EOF_CLUSTER         = 0x00000FF8,
         ALLOCATED_CLUSTER   = 0x00000001
+    };
+
+     struct file_ret {
+        uint32_t start_cluster;
+        FILE* fd;
+
+        file_ret(uint32_t clu, FILE* fd) : start_cluster(clu), fd(fd) {};
     };
 
 private:
@@ -77,17 +84,18 @@ public:
     FAT32(FAT32&& tmp) = delete;
 
 public:
-     void cd(const path& pth) const noexcept override;
+    void cd(const char* pth) const noexcept override;
      void mkdir(char* dir) const noexcept override;
      void rm(char* file) noexcept override;
      void rm(char *file, const char* args, ...) noexcept override;
-     void cp(const path& src, const path& dst) noexcept override;
+     void cp(const char* src, const char* dst) noexcept override;
 
 private:
     void init() noexcept;
     void set_up() noexcept;
     void create_disk() noexcept;
     void load() noexcept;
+    void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept;
 
     void define_superblock() noexcept;
     void define_fat_table() noexcept;
@@ -96,9 +104,10 @@ private:
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
+    file_ret store_file(const char* path) noexcept;
 
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
-    void insert_file() noexcept;
+    void insert_file(dir_t& dir, const char* path) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
 
@@ -109,12 +118,14 @@ private:
     void print_fat_table() const noexcept;
     void print_dir(dir_t& dir) const noexcept;
 
+    FILE* get_file_handlr(const char* file_path) noexcept;
+
 private:
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t   USER_SPACE  = B(200);
-    static constexpr uint32_t CLUSTER_SIZE  = 80;
+    static constexpr uint32_t USER_SPACE    = KB(6);
+    static constexpr uint32_t CLUSTER_SIZE  = B(200);
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
