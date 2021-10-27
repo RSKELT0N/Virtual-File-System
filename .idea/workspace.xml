@@ -13,12 +13,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="99083acf-1d6e-4d8e-b220-60687b35f7aa" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/FAT32.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/FAT32.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/IFS.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/IFS.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Path.h" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -115,7 +111,7 @@
       <workItem from="1635203567796" duration="316000" />
       <workItem from="1635267200390" duration="3800000" />
       <workItem from="1635289920763" duration="7032000" />
-      <workItem from="1635330741417" duration="133000" />
+      <workItem from="1635330741417" duration="400000" />
     </task>
     <servers />
   </component>

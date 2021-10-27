@@ -43,6 +43,7 @@ void FAT32::init() noexcept {
      insert_file(*m_root, "C:/Users/Ryan/Documents/text.txt");
      dir_t* doc = read_dir(0);
      print_dir(*doc);
+     print_fat_table();
      //LOG(Log::INFO, "file system has been initialised.");
  }
 
@@ -366,6 +367,11 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
      m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[amt_of_clu_needed - 1]));
      m_disk->write((void*)&buffer, remaining_data, 1);
      fflush(m_disk->get_file());
+
+     m_fat_table[first_cluster] = clu_list[0];
+     for(int i = 0; i < amt_of_clu_needed; i++)
+         m_fat_table[clu_list[i]] = clu_list[i + 1];
+     m_fat_table[clu_list[amt_of_clu_needed - 1]] = EOF_CLUSTER;
 
      free(clu_list);
      return file_ret(first_cluster, file);
