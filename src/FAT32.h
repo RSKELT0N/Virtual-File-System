@@ -89,6 +89,7 @@ public:
      void rm(char* file) noexcept override;
      void rm(char *file, const char* args, ...) noexcept override;
      void cp(const char* src, const char* dst) noexcept override;
+     const char* fs_name() noexcept;
 
 private:
     void init() noexcept;
@@ -107,9 +108,11 @@ private:
     file_ret store_file(const char* path) noexcept;
 
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
-    void insert_file(dir_t& dir, const char* path) noexcept;
+    void insert_file(dir_t& dir, const char* path, const char* name) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
+    std::string read_file(dir_t& dir, const char* entry_name) noexcept;
+    std::string read_file(dir_entry_t& entry) noexcept;
 
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
@@ -120,7 +123,10 @@ private:
 
     FILE* get_file_handlr(const char* file_path) noexcept;
 
+    dir_entry_t* find_entry(dir_t& dir, const char* path) const noexcept;
+
 private:
+    static constexpr const char* name = "FAT32";
     const char* DISK_NAME;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 

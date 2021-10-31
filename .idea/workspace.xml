@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
-    <generated />
+    <generated>
+      <config projectName="FAT32" targetName="filesystem" />
+      <config projectName="FAT32" targetName="all" />
+      <config projectName="FAT32" targetName="setup" />
+      <config projectName="FAT32" targetName="finish" />
+    </generated>
   </component>
   <component name="CMakeSettings">
     <configurations>
@@ -12,9 +17,19 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="99083acf-1d6e-4d8e-b220-60687b35f7aa" name="Changes" comment="">
+    <list default="true" id="889b39f0-a1d5-40fb-9ace-5ecec9338a6c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/FAT32.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/FAT32.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/IFS.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/IFS.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Log.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/Log.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/VFS.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/VFS.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/VFS.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/VFS.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/terminal.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/terminal.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/terminal.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/terminal.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,7 +37,6 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ClangdSettings">
-    <option name="clangTidyViaClangd" value="false" />
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="ExternalProjectsData">
@@ -68,7 +82,10 @@
       </map>
     </option>
   </component>
-  <component name="ProjectId" id="1zybcMtAODUcHvNYA6xYams6L2U" />
+  <component name="OCResolveContextSettings">
+    <option name="configuration" value="$PROJECT_DIR$/src/main.cpp" />
+  </component>
+  <component name="ProjectId" id="20HApFR1sy6KKzvOx3Fp2NGjL7k" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -77,57 +94,62 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
-    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Makefile Application.all">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FAT32" TARGET_NAME="all" CONFIG_NAME="all" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="filesystem" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FAT32" TARGET_NAME="filesystem" CONFIG_NAME="filesystem" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="finish" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FAT32" TARGET_NAME="finish" CONFIG_NAME="finish" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="setup" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FAT32" TARGET_NAME="setup" CONFIG_NAME="setup" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
+    <list>
+      <item itemvalue="Makefile Application.all" />
+      <item itemvalue="Makefile Application.filesystem" />
+      <item itemvalue="Makefile Application.finish" />
+      <item itemvalue="Makefile Application.setup" />
+    </list>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="99083acf-1d6e-4d8e-b220-60687b35f7aa" name="Changes" comment="" />
-      <created>1635123353238</created>
+      <changelist id="889b39f0-a1d5-40fb-9ace-5ecec9338a6c" name="Changes" comment="" />
+      <created>1635691321839</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1635123353238</updated>
-      <workItem from="1635123354524" duration="180000" />
-      <workItem from="1635123546513" duration="119000" />
-      <workItem from="1635124253122" duration="43000" />
-      <workItem from="1635124309376" duration="8000" />
-      <workItem from="1635124334002" duration="3000" />
-      <workItem from="1635124354190" duration="24000" />
-      <workItem from="1635124387448" duration="25000" />
-      <workItem from="1635159242049" duration="3082000" />
-      <workItem from="1635203567796" duration="316000" />
-      <workItem from="1635267200390" duration="3800000" />
-      <workItem from="1635289920763" duration="7032000" />
-      <workItem from="1635330741417" duration="400000" />
+      <updated>1635691321839</updated>
+      <workItem from="1635691324068" duration="12928000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>

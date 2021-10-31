@@ -1,9 +1,9 @@
 #########################
 # variables
 #########################
-CXX      := g++ -std=gnu++14
+CXX      := g++ -std=gnu++11
 TARGET   := filesystem
-CXXFLAGS := -w
+CXXFLAGS := -w -g
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := src
 BIN      := bin

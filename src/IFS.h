@@ -8,6 +8,8 @@ public:
     IFS(const IFS&) = delete;
     IFS(IFS&&) = delete;
 
+    virtual const char* fs_name() noexcept = 0;
+
 protected:
     virtual void cd(const char* pth) const noexcept = 0;
     virtual void mkdir(char* dir) const noexcept = 0;

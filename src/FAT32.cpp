@@ -1,7 +1,7 @@
 #include "FAT32.h"
 
  IFS::IFS() = default;
-
+ 
  FAT32::FAT32(const char *disk_name) {
      if(disk_name[0] == '\0')
          DISK_NAME = DEFAULT_DISK;
@@ -39,12 +39,14 @@ void FAT32::init() noexcept {
      store_superblock();
      store_fat_table();
      store_dir(*m_root);
+     LOG(Log::INFO, "file system has been initialised.");
      insert_dir(*m_root, "Documents");
-     insert_file(*m_root, "C:/Users/Ryan/Documents/text.txt");
+     insert_file(*m_root, "sampleEntries/text.txt", "Log.txt");
      dir_t* doc = read_dir(0);
      print_dir(*doc);
      print_fat_table();
-     //LOG(Log::INFO, "file system has been initialised.");
+     std::string buffer = read_file(*m_root, "Log.txt");
+     printf("%s\n", buffer.c_str());
  }
 
  void FAT32::create_disk() noexcept {
@@ -55,7 +57,7 @@ void FAT32::init() noexcept {
      m_disk->close();
 
      m_disk->open(DISK_NAME, "rb+");
-     //LOG(Log::INFO, "binary file '" + std::string(DISK_NAME) + "' has been created.");
+     LOG(Log::INFO, "binary file '" + std::string(DISK_NAME) + "' has been created.");
  }
 
  void FAT32::define_superblock() noexcept {
@@ -294,6 +296,106 @@ void FAT32::init() noexcept {
      return ret;
  }
 
+std::string FAT32::read_file(dir_t& dir, const char* entry_name) noexcept {
+     dir_entry_t* entry_ptr = find_entry(dir, entry_name);
+
+     if(m_fat_table[entry_ptr->start_cluster_index] == UNALLOCATED_CLUSTER) {
+         LOG(Log::WARNING, "cluster specified has not been allocated, file could not be read");
+         return "";
+     }
+
+     uint32_t amt_of_clu_used = 0;
+     size_t entry_size = entry_ptr->dir_entry_size;
+     char buffer[entry_size];
+     uint32_t data_read = 0;
+
+     if(entry_size <= CLUSTER_SIZE)
+        amt_of_clu_used = 1;
+    else amt_of_clu_used = entry_size / CLUSTER_SIZE;
+
+    if(entry_size % CLUSTER_SIZE > 0)
+        amt_of_clu_used += 1;
+
+    if(amt_of_clu_used == 1) {
+        m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * entry_ptr->start_cluster_index));
+        m_disk->read((void*)&buffer, sizeof(buffer), 1);
+        fflush(m_disk->get_file());
+
+        data_read += entry_size;
+
+        return buffer;
+    }
+
+    uint32_t curr_clu = entry_ptr->start_cluster_index;
+
+    for(int i = 0; i < amt_of_clu_used - 1; i++) {
+        size_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
+
+        m_disk->seek(addr_offset);
+        m_disk->read((void*)&buffer[data_read], CLUSTER_SIZE, 1);
+        fflush(m_disk->get_file());
+        curr_clu = m_fat_table[curr_clu];
+        data_read += CLUSTER_SIZE;
+    }
+
+    uint32_t remaining_data = abs(entry_size - data_read);
+
+    m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
+    m_disk->read((void*)&buffer[data_read], remaining_data, 1);
+    fflush(m_disk->get_file());
+
+    return std::string(buffer);
+ }
+
+ std::string FAT32::read_file(dir_entry_t &entry) noexcept {
+     if(m_fat_table[entry.start_cluster_index] == UNALLOCATED_CLUSTER) {
+         LOG(Log::WARNING, "cluster specified has not been allocated, file could not be read");
+         return {""};
+     }
+
+     uint32_t amt_of_clu_used = 0;
+     size_t entry_size = entry.dir_entry_size;
+     char buffer[entry_size];
+     uint32_t data_read = 0;
+
+     if(entry_size <= CLUSTER_SIZE)
+         amt_of_clu_used = 1;
+     else amt_of_clu_used = entry_size / CLUSTER_SIZE;
+
+     if(entry_size % CLUSTER_SIZE > 0)
+         amt_of_clu_used += 1;
+
+     if(amt_of_clu_used == 1) {
+         m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * entry.start_cluster_index));
+         m_disk->read((void*)&buffer, sizeof(buffer), 1);
+         fflush(m_disk->get_file());
+
+         data_read += entry_size;
+
+         return buffer;
+     }
+
+     uint32_t curr_clu = entry.start_cluster_index;
+
+     for(int i = 0; i < amt_of_clu_used - 1; i++) {
+         size_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
+
+         m_disk->seek(addr_offset);
+         m_disk->read((void*)&buffer[data_read], CLUSTER_SIZE, 1);
+         fflush(m_disk->get_file());
+         curr_clu = m_fat_table[curr_clu];
+         data_read += CLUSTER_SIZE;
+     }
+
+     uint32_t remaining_data = abs(entry_size - data_read);
+
+     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
+     m_disk->read((void*)&buffer[data_read], remaining_data, 1);
+     fflush(m_disk->get_file());
+
+     return {buffer};
+ }
+
 FAT32::file_ret FAT32::store_file(const char *path) noexcept {
      if(access(path, F_OK) == -1) {
          LOG(Log::WARNING, "file specified does not exist");
@@ -377,25 +479,17 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
      return file_ret(first_cluster, file);
  }
 
- void FAT32::insert_file(dir_t& curr_dir, const char* path) noexcept {
-     auto [clu, fd] = store_file(path);
+ void FAT32::insert_file(dir_t& curr_dir, const char* path, const char* name) noexcept {
+     FAT32::file_ret file = store_file(path);
 
-     if(clu == -1) {
+     if(file.start_cluster == -1) {
          LOG(Log::WARNING, "file could not be stored");
          return;
      }
 
-     std::string file_name;
-
-     for(int i = sizeof(path) - 1; i >= 0; i--) {
-        file_name += path[i];
-        if(path[i] == '\0' || path[i] == '/')
-            break;
-     }
-
-    add_new_entry(curr_dir, file_name.c_str(), clu, lseek(fileno(fd), 0, SEEK_END), 1);
+    add_new_entry(curr_dir, name, file.start_cluster, lseek(fileno(file.fd), 0, SEEK_END), 1);
     store_dir(curr_dir);
-    fclose(fd);
+    fclose(file.fd);
  }
 
  FILE* FAT32::get_file_handlr(const char* file) noexcept {
@@ -485,8 +579,21 @@ void FAT32::rm(char *file, const char *args, ...) noexcept {
 
 }
 
+const char* FAT32::fs_name() noexcept {
+     return this->name;
+ }
+
 void FAT32::load() noexcept {
 
+}
+
+FAT32::dir_entry_t* FAT32::find_entry(dir_t& dir, const char* entry) const noexcept {
+    for(int i = 0; i < dir.dir_header.dir_entry_amt; i++)
+        if(strcmp(dir.dir_entries[i].dir_entry_name, entry) == 0)
+            return &dir.dir_entries[i];
+
+    LOG(Log::WARNING, "'" + std::string(entry) + "' could not be found");
+    return nullptr;
 }
 
 void FAT32::print_fat_table() const noexcept {
