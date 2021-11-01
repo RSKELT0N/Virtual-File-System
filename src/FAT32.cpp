@@ -40,13 +40,6 @@ void FAT32::init() noexcept {
      store_fat_table();
      store_dir(*m_root);
      LOG(Log::INFO, "file system has been initialised.");
-     insert_dir(*m_root, "Documents");
-     insert_file(*m_root, "sampleEntries/text.txt", "Log.txt");
-     dir_t* doc = read_dir(0);
-     print_dir(*doc);
-     print_fat_table();
-     std::string buffer = read_file(*m_root, "Log.txt");
-     printf("%s\n", buffer.c_str());
  }
 
  void FAT32::create_disk() noexcept {

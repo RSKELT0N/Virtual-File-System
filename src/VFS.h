@@ -3,6 +3,7 @@
 
 #include "IFS.h"
 #include "Log.h"
+#include "FAT32.h"
 #include <string>
 #include <stdio.h>
 #include <vector>
@@ -25,10 +26,10 @@ private:
     VFS(VFS&&) = delete;
 
 public:
-    void mnt_disk(const std::string& dsk) noexcept;
-    void add_disk(const std::string& dsk, IFS* fs) noexcept;
-    void rm_disk(const std::string& dsk) noexcept;
-    void lst_disks() const noexcept;
+     void mnt_disk(std::vector<std::string>&);
+     void add_disk(std::vector<std::string>&);
+     void rm_disk(std::vector<std::string>&);
+     void lst_disks(std::vector<std::string>&);
 
 public:
     static VFS* get_vfs();

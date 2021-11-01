@@ -1,7 +1,8 @@
-#include "FAT32.h"
+#include "terminal.h"
 
 int main() {
-    IFS* fat32 = new FAT32("disk.dat");
-    delete fat32;
+    terminal* term = new terminal();
+    term->run();
+    delete term;
     return 0;
 }

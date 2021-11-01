@@ -17,10 +17,10 @@ VFS::~VFS() {
     delete vfs_cmds;
 }
 
-void VFS::mnt_disk(const std::string &dsk) noexcept {
+void VFS::mnt_disk(std::vector<std::string>& parts) {
     IFS* tmp = nullptr;
     for(auto i = disks->begin(); i != disks->end(); i++) {
-        if(dsk == i->first)
+        if(parts[2] == i->first)
             tmp = i->second;
     }
 
@@ -32,20 +32,20 @@ void VFS::mnt_disk(const std::string &dsk) noexcept {
     this->mnted_system = tmp;
 }
 
-void VFS::add_disk(const std::string &dsk, IFS *fs) noexcept {
-    disks->insert({dsk, fs});
+void VFS::add_disk(std::vector<std::string>& parts) {
+    disks->insert({parts[2], (IFS*)new FAT32(parts[2].c_str())});
 }
 
-void VFS::rm_disk(const std::string &dsk) noexcept {
-    disks->erase(dsk);
+void VFS::rm_disk(std::vector<std::string>& parts) {
+    disks->erase(parts[2]);
 }
 
-void VFS::lst_disks() const noexcept {
-    printf("%s\n-------------------\n", " Disks");
+void VFS::lst_disks(std::vector<std::string>& parts) {
+    printf("%s\n----------------------------------------\n", " Disks");
     for(auto i = disks->begin(); i != disks->end(); i++) {
         printf(" -> (name)%s : (filesystem)%s\n", i->first.c_str(), i->second->fs_name());
     }
-    printf("-------------------\n");
+    printf("-----------------------------------------\n");
 }
 
 VFS* VFS::get_vfs() {
@@ -69,5 +69,9 @@ void VFS::init_cmds() noexcept {
 }
 
 void VFS::vfs_help() const noexcept {
-    printf("------  %s  ------", "VFS help");
+    printf("------  %s  ------\n", "VFS help");
+    for(int i = 0; i < vfs_cmds->size(); i++) {
+        printf(" -> %s - %s\n", vfs_cmds->at(i).flag, vfs_cmds->at(i).desc);
+    }
+    printf("------  %s  ------\n", "END");
 }

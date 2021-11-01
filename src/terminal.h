@@ -21,15 +21,20 @@ public:
         invalid
     };
 
+    struct flag_t {
+        typedef void (*func)(std::vector<std::string>&);
+
+        const char* name;
+        func func_ptr;
+        flag_t(const char* flg, func ptr) : name(flg), func_ptr(ptr) {};
+    };
+
     typedef struct {
         command_t cmd_name;
         const char* cmd_desc;
-        std::unordered_set<const char*> flags;
+        std::vector<flag_t> flags;
         terminal::command_t (*valid)(std::vector<std::string>& parts);
     } input_t;
-
-public:
-    friend terminal::command_t valid_vfs(std::vector<std::string>& parts) noexcept;
 
 public:
     terminal();
@@ -38,15 +43,23 @@ public:
     terminal(const terminal&) = delete;
     terminal(terminal&&) = delete;
 
+    void run() noexcept;
+
+    friend terminal::command_t valid_vfs(std::vector<std::string>& parts) noexcept;
+
 private:
-    std::vector<std::string> split(const char* line, char sep) noexcept;
-
-public:
+    void input() noexcept;
     void init_cmds() noexcept;
-    bool validate_cmd(std::vector<std::string>& parts) noexcept;
+    std::vector<std::string> split(const char* line, char sep) noexcept;
+    command_t validate_cmd(std::vector<std::string>& parts) noexcept;
+    void determine_flag(command_t cmd, std::vector<std::string>&) noexcept;
+
+    static void wrap_add_disk(std::vector<std::string> &);
+    static void wrap_mnt_disk(std::vector<std::string> &);
+    static void wrap_rm_disk(std::vector<std::string> &);
 
 public:
-    VFS* m_vfs;
+    static VFS* m_vfs;
 
 private:
     IFS* m_mnted_system;
