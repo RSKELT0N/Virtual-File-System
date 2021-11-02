@@ -23,7 +23,7 @@ $(TARGET): $(OBJ_RULE)
 	$(CXX) $(CXXFLAGS) -c $<
 
 finish:
-	mv *.o $(BIN)
+	mv *.o $(BIN)/
 #########################
 # clean
 #########################

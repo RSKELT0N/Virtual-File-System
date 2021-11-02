@@ -42,9 +42,17 @@ void VFS::rm_disk(std::vector<std::string>& parts) {
 
 void VFS::lst_disks(std::vector<std::string>& parts) {
     printf("%s\n----------------------------------------\n", " Disks");
-    for(auto i = disks->begin(); i != disks->end(); i++) {
-        printf(" -> (name)%s : (filesystem)%s\n", i->first.c_str(), i->second->fs_name());
+    if(disks->empty()) {
+        printf(" %s", "-> there is no active systems added\n");
+        goto no_disks;
     }
+    for(auto i = disks->begin(); i != disks->end(); i++) {
+        printf(" -> (name)%s : (filesystem)%s", i->first.c_str(), i->second->fs_name());
+        if(i->second == mnted_system)
+            printf(" %s", "[ Mounted ]");
+        printf("\n");
+    }
+    no_disks:
     printf("-----------------------------------------\n");
 }
 
@@ -59,7 +67,7 @@ IFS& VFS::get_mnted_system() const noexcept {
 }
 
 void VFS::init_cmds() noexcept {
-    command_t ls = {"ls", "lists the curre`t mounted systems"};
+    command_t ls = {"ls", "lists the current mounted systems"};
     command_t add = {"add", "adds a system to the virtual file system"};
     command_t rm = {"rm", "removes a system to the virtual file system"};
 

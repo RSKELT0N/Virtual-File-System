@@ -28,6 +28,9 @@ void terminal::input() noexcept {
     while(1) {
         std::getline(std::cin, line);
 
+        if(line.empty())
+            continue;
+
         if(line == "exit")
             return;
 
@@ -36,8 +39,7 @@ void terminal::input() noexcept {
 
         switch(command) {
             case terminal::vfs: {
-                if(parts.size() <= 2) {
-                    m_vfs->lst_disks(parts);
+                if(parts.size() < 2) {
                     m_vfs->vfs_help();
                     break;
                 }
@@ -51,7 +53,7 @@ void terminal::input() noexcept {
 }
 
 void terminal::init_cmds() noexcept {
-   (*m_cmds)["/vfs"] = input_t{terminal::vfs, "allows the user to access control of the virtual file system", {flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk)}, &valid_vfs};
+   (*m_cmds)["/vfs"] = input_t{terminal::vfs, "allows the user to access control of the virtual file system", {flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk), flag_t("ls", wrap_ls_disk)}, &valid_vfs};
 }
 
 std::vector<std::string> terminal::split(const char* line, char sep) noexcept {
@@ -91,6 +93,8 @@ terminal::command_t valid_vfs(std::vector<std::string>& parts) noexcept {
     if(parts.size() > 3)
         return terminal::invalid;
 
+    if(parts.size() == 1)
+        return terminal::vfs;
 
     switch(hash(parts[1].c_str())) {
         case hash("ls"): {
@@ -108,7 +112,12 @@ terminal::command_t valid_vfs(std::vector<std::string>& parts) noexcept {
                 return terminal::invalid;
             break;
         }
-        default: break;
+        case hash("mnt"): {
+            if(parts.size() != 3)
+                return terminal::invalid;
+            break;
+        }
+        default: return terminal::invalid;
     }
     return terminal::vfs;
 }
@@ -124,3 +133,8 @@ void terminal::wrap_mnt_disk(std::vector<std::string>& parts) {
 void terminal::wrap_rm_disk(std::vector<std::string>& parts) {
     m_vfs->rm_disk(parts);
 }
+
+void terminal::wrap_ls_disk(std::vector<std::string>& parts) {
+    m_vfs->lst_disks(parts);
+}
+

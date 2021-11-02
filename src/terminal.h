@@ -54,9 +54,10 @@ private:
     command_t validate_cmd(std::vector<std::string>& parts) noexcept;
     void determine_flag(command_t cmd, std::vector<std::string>&) noexcept;
 
-    static void wrap_add_disk(std::vector<std::string> &);
-    static void wrap_mnt_disk(std::vector<std::string> &);
-    static void wrap_rm_disk(std::vector<std::string> &);
+    static void wrap_add_disk(std::vector<std::string>&);
+    static void wrap_mnt_disk(std::vector<std::string>&);
+    static void wrap_rm_disk(std::vector<std::string>&);
+    static void wrap_ls_disk(std::vector<std::string>&);
 
 public:
     static VFS* m_vfs;
