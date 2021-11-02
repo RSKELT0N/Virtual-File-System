@@ -33,7 +33,7 @@ public:
 
 public:
     static VFS* get_vfs();
-    IFS& get_mnted_system() const noexcept;
+    IFS* get_mnted_system() const noexcept;
     void vfs_help() const noexcept;
     void init_cmds() noexcept;
 

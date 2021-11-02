@@ -37,6 +37,7 @@ void VFS::add_disk(std::vector<std::string>& parts) {
 }
 
 void VFS::rm_disk(std::vector<std::string>& parts) {
+    delete disks->find(parts[2])->second;
     disks->erase(parts[2]);
 }
 
@@ -62,8 +63,9 @@ VFS* VFS::get_vfs() {
     return vfs;
 }
 
-IFS& VFS::get_mnted_system() const noexcept {
-    return *mnted_system;
+IFS* VFS::get_mnted_system() const noexcept {
+    printf("vfs: %p\n", &mnted_system);
+    return mnted_system;
 }
 
 void VFS::init_cmds() noexcept {

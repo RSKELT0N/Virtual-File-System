@@ -63,7 +63,7 @@ public:
     static VFS* m_vfs;
 
 private:
-    IFS* m_mnted_system;
+    IFS** m_mnted_system;
     std::unordered_map<std::string, input_t>* m_cmds;
 };
 

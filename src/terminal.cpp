@@ -9,7 +9,7 @@ constexpr unsigned int hash(const char *s, int off = 0) {
 
 terminal::terminal() {
     m_vfs = VFS::get_vfs();
-    m_mnted_system = (IFS*)&m_vfs->get_mnted_system();
+    m_mnted_system = (IFS**)m_vfs->get_mnted_system();
     m_cmds = new std::unordered_map<std::string, input_t>();
     init_cmds();
 }
