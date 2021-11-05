@@ -17,7 +17,6 @@ all: setup $(TARGET) finish
 
 setup:
 	mkdir $(BIN)
-	mkdir $(DISKS)
 
 $(TARGET): $(OBJ_RULE)
 	$(CXX) $(CXXFLAGS) -o $@ *.o
@@ -26,14 +25,13 @@ $(TARGET): $(OBJ_RULE)
 
 finish:
 	mv *.o $(BIN)/
-#########################
+######################### mkdir $(DISKS)
 # clean
 #########################
 clean:
 	rm -rf $(BIN)/
-	rm -rf $(DISKS)/
 	rm $(TARGET)
-#########################
+######################### rm -rf $(DISKS)/
 # rebuild
 #########################
 rb: clean all

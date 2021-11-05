@@ -74,7 +74,7 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
     }
     for(auto i = disks->begin(); i != disks->end(); i++) {
         printf(" -> (name)%s : (filesystem)%s", i->first.c_str(), i->second.fs_type);
-        if(i->second.fs == mnted_system && mnted_system != nullptr)
+        if(i->second.fs == mnted_system && i->second.fs != nullptr)
             printf(" %s", "[ Mounted ]");
         printf("\n");
     }

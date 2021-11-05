@@ -1,6 +1,7 @@
 #include "FAT32.h"
 
  IFS::IFS() = default;
+ const uint32_t FAT32::CLUSTER_AMT;
  
  FAT32::FAT32(const char *disk_name) {
      if(disk_name[0] == '\0')
@@ -14,17 +15,13 @@
          LOG(Log::ERROR, "maximum storage can only be 4gb");
      }
 
-     m_disk      = new Disk();
-     m_fat_table = (uint32_t *)malloc(sizeof(uint32_t) * CLUSTER_AMT);
-     m_root      = (dir_t*)malloc(sizeof(dir_t));
-     m_curr_dir  = (dir_t*)malloc(sizeof(dir_t));
-
+     m_disk = new Disk();
     init();
 }
 
 FAT32::~FAT32() {
     free(m_fat_table);
-    m_disk->rm();
+    //m_disk->rm();
     delete m_disk;
     delete m_root;
     if(m_curr_dir != m_root)
@@ -77,6 +74,7 @@ void FAT32::init() noexcept {
  }
 
  void FAT32::define_fat_table() noexcept {
+     m_fat_table = (uint32_t*)malloc(sizeof(uint32_t) * CLUSTER_AMT);
      memset((void*)m_fat_table, UNALLOCATED_CLUSTER, (size_t)FAT_TABLE_SIZE);
  }
 
@@ -222,26 +220,23 @@ void FAT32::init() noexcept {
  void FAT32::load() noexcept {
      m_disk->open(DISK_NAME, "rb+");
      m_superblock = load_superblock();
-     m_fat_table  = load_fat_table();
+     define_fat_table();
+     load_fat_table();
      m_root       = read_dir(0);
+     m_curr_dir = m_root;
  }
 
  FAT32::superblock_t FAT32::load_superblock() noexcept {
      superblock_t ret;
      m_disk->seek(SUPERBLOCK_START_ADDR);
      m_disk->read((void*)&ret, sizeof(superblock_t), 1);
-     fflush(m_disk->get_file());
 
      return ret;
  }
 
- uint32_t* FAT32::load_fat_table() noexcept {
-     uint32_t* ret = (uint32_t*)malloc(sizeof(uint32_t) * CLUSTER_AMT);
+void FAT32::load_fat_table() noexcept {
      m_disk->seek(FAT_TABLE_START_ADDR);
-     m_disk->read((void*)&ret, sizeof(FAT_TABLE_SIZE), 1);
-     fflush(m_disk->get_file());
-
-     return ret;
+     m_disk->read(m_fat_table, sizeof(uint32_t), FAT32::CLUSTER_AMT);
  }
 
  void FAT32::insert_dir(dir_t& curr_dir, const char *dir_name) noexcept {
@@ -270,7 +265,6 @@ void FAT32::init() noexcept {
      //attain dir_header
      m_disk->seek(dir_start_addr);
      m_disk->read((void*)&ret->dir_header, sizeof(dir_header_t), 1);
-     fflush(m_disk->get_file());
 
      uint16_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(ret->dir_header)) / sizeof(dir_entry_t);
      uint16_t remain_entries  = (first_clu_entry_amt >= ret->dir_header.dir_entry_amt) ? 0 : (ret->dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);

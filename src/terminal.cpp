@@ -31,8 +31,8 @@ void terminal::run() noexcept {
 
 void terminal::input() noexcept {
     std::string line;
-    printf("enter /help for cmd list\n-------------------"
-           "--\n");
+    printf("enter /help for cmd list\n"
+           "-------------------------\n");
 
     while(1) {
         printf("-> ");
