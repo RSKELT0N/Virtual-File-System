@@ -7,7 +7,7 @@ int main() {
 
 //    int* a = new int(10);
 //    int** ptr = &a;
-//    delete a;
+//    delete a;#
 //    a = new int(15);
 //
 //    printf("%d", **ptr);

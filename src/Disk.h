@@ -20,6 +20,7 @@ private:
     Disk(const Disk&);
 
 public:
+    ret_t rm() override;
     ret_t close() override;
     ret_t seek(const long& offset) override;
     ret_t truncate(const off_t& size) override;
@@ -34,6 +35,8 @@ public:
 private:
     FILE* file;
     size_t addr;
+    const char* disk_name;
+    std::string cmpl_path_to_file;
 };
 
 #endif //_DISK_H_

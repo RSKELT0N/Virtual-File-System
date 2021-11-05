@@ -6,6 +6,7 @@ DiskDriver::~DiskDriver() = default;
 
 Disk::Disk() {
     file = NULL;
+
 }
 
 Disk::~Disk() {
@@ -13,7 +14,7 @@ Disk::~Disk() {
         LOG(Log::WARNING, "FILE object has not been initialised yet!");
         exit(EXIT_FAILURE);
     }
-    delete file;
+    fclose(file);
 }
 
 FILE* Disk::get_file() const noexcept {
@@ -28,7 +29,10 @@ size_t& Disk::get_addr() const noexcept {
 }
 
 DiskDriver::ret_t Disk::open(const char *pathname, const char *mode) {
-    this->file = fopen(pathname, mode);
+    this->cmpl_path_to_file = "disks/" + std::string(pathname);
+    this->disk_name = pathname;
+
+    this->file = fopen(cmpl_path_to_file.c_str(), mode);
 
     if(file == NULL)
         LOG(Log::ERROR, "File descriptor could not be opened.");
@@ -79,4 +83,12 @@ DiskDriver::ret_t Disk::truncate(const off_t &size) {
         LOG(Log::ERROR, "Error truncating the file");
 
     return val == -1 ? ERROR : VALID;
+}
+
+DiskDriver::ret_t Disk::rm() {
+    uint8_t val = std::remove(cmpl_path_to_file.c_str());
+    if(val != 0)
+        LOG(Log::WARNING, "Cant remove file(" +  cmpl_path_to_file + ")");
+
+    return val == 0 ? VALID : ERROR;
 }

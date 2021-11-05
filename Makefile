@@ -7,6 +7,7 @@ CXXFLAGS := -w -g
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := src
 BIN      := bin
+DISKS    := disks
 CPP       = $(wildcard $(SRC)/*.cpp)
 OBJ_RULE  = $(patsubst %.cpp, %.o, $(CPP)) #pattern, replacement, text
 #########################
@@ -16,6 +17,7 @@ all: setup $(TARGET) finish
 
 setup:
 	mkdir $(BIN)
+	mkdir $(DISKS)
 
 $(TARGET): $(OBJ_RULE)
 	$(CXX) $(CXXFLAGS) -o $@ *.o
@@ -29,6 +31,10 @@ finish:
 #########################
 clean:
 	rm -rf $(BIN)/
+	rm -rf $(DISKS)/
 	rm $(TARGET)
-	rm *.dat
+#########################
+# rebuild
+#########################
+rb: clean all
 #########################

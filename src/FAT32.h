@@ -84,12 +84,12 @@ public:
     FAT32(FAT32&& tmp) = delete;
 
 public:
-    void cd(const char* pth) const noexcept override;
-     void mkdir(char* dir) const noexcept override;
-     void rm(char* file) noexcept override;
-     void rm(char *file, const char* args, ...) noexcept override;
+    void cd(const char* pth)  noexcept override;
+     void mkdir(const char* dir) noexcept override;
+     void rm(const char* file) noexcept override;
+     void rm(const char *file, const char* args, ...) noexcept override;
      void cp(const char* src, const char* dst) noexcept override;
-     const char* fs_name() noexcept;
+     void ls() noexcept override;
 
 private:
     void init() noexcept;
@@ -105,6 +105,9 @@ private:
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
+    superblock_t load_superblock() noexcept;
+    uint32_t* load_fat_table() noexcept;
+
     file_ret store_file(const char* path) noexcept;
 
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
@@ -126,8 +129,8 @@ private:
     dir_entry_t* find_entry(dir_t& dir, const char* path) const noexcept;
 
 private:
-    static constexpr const char* name = "FAT32";
     const char* DISK_NAME;
+    const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
     static constexpr uint32_t USER_SPACE    = KB(6);
@@ -145,6 +148,7 @@ private:
     superblock_t m_superblock;
     uint32_t* m_fat_table;
     dir_t* m_root;
+    dir_t* m_curr_dir;
 };
 
 #endif //_FAT32_H_

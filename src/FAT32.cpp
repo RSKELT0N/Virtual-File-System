@@ -7,6 +7,9 @@
          DISK_NAME = DEFAULT_DISK;
      else DISK_NAME = disk_name;
 
+     std::string cmpl = "disks/" + std::string(DISK_NAME);
+     PATH_TO_DISK = cmpl.c_str();
+
      if(STORAGE_SIZE > (1ULL << 32)) {
          LOG(Log::ERROR, "maximum storage can only be 4gb");
      }
@@ -14,26 +17,32 @@
      m_disk      = new Disk();
      m_fat_table = (uint32_t *)malloc(sizeof(uint32_t) * CLUSTER_AMT);
      m_root      = (dir_t*)malloc(sizeof(dir_t));
+     m_curr_dir  = (dir_t*)malloc(sizeof(dir_t));
 
     init();
 }
 
 FAT32::~FAT32() {
     free(m_fat_table);
+    m_disk->rm();
     delete m_disk;
     delete m_root;
+    if(m_curr_dir != m_root)
+        delete m_curr_dir;
 }
 
 void FAT32::init() noexcept {
-     if(access(DISK_NAME, F_OK) == -1)
+
+     if(access(PATH_TO_DISK, F_OK) == -1)
          set_up();
-     else LOG(Log::WARNING, "'" + std::string(DISK_NAME) + "' disk already exists.");
+     else load();
  }
 
  void FAT32::set_up() noexcept {
      define_superblock();
      define_fat_table();
      m_root = init_dir(0, 0, "root");
+     m_curr_dir = m_root;
 
      create_disk();
      store_superblock();
@@ -175,6 +184,7 @@ void FAT32::init() noexcept {
      }
 
      uint32_t* clu_list = (uint32_t*)malloc(sizeof(uint32_t) * num_of_clu_needed);
+     memset(clu_list, 0, num_of_clu_needed);
 
      for(int i = 0; i < num_of_clu_needed; i++)
          clu_list[i] = attain_clu();
@@ -207,6 +217,31 @@ void FAT32::init() noexcept {
      // free heap allocated memory and store unsaved structures onto disk
      free(clu_list);
      store_fat_table();
+ }
+
+ void FAT32::load() noexcept {
+     m_disk->open(DISK_NAME, "rb+");
+     m_superblock = load_superblock();
+     m_fat_table  = load_fat_table();
+     m_root       = read_dir(0);
+ }
+
+ FAT32::superblock_t FAT32::load_superblock() noexcept {
+     superblock_t ret;
+     m_disk->seek(SUPERBLOCK_START_ADDR);
+     m_disk->read((void*)&ret, sizeof(superblock_t), 1);
+     fflush(m_disk->get_file());
+
+     return ret;
+ }
+
+ uint32_t* FAT32::load_fat_table() noexcept {
+     uint32_t* ret = (uint32_t*)malloc(sizeof(uint32_t) * CLUSTER_AMT);
+     m_disk->seek(FAT_TABLE_START_ADDR);
+     m_disk->read((void*)&ret, sizeof(FAT_TABLE_SIZE), 1);
+     fflush(m_disk->get_file());
+
+     return ret;
  }
 
  void FAT32::insert_dir(dir_t& curr_dir, const char *dir_name) noexcept {
@@ -433,6 +468,7 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
      }
 
      uint32_t* clu_list = (uint32_t*)malloc(sizeof(uint32_t) * amt_of_clu_needed);
+     memset(clu_list, 0, amt_of_clu_needed);
 
      for(int i = 0; i < amt_of_clu_needed; i++)
          clu_list[i] = attain_clu();
@@ -556,29 +592,48 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
 
 }
 
-void FAT32::mkdir(char *dir) const noexcept {
+void FAT32::mkdir(const char *dir) noexcept {
+    dir_entry_t* tmp = find_entry(*m_curr_dir, dir);
+
+    if(tmp != nullptr) {
+        LOG(Log::WARNING, "entry already exists with name specified");
+        return;
+    }
+
+     insert_dir(*m_curr_dir, dir);
+}
+
+void FAT32::cd(const char* pth) noexcept {
+    dir_entry_t* dir = find_entry(*m_curr_dir, pth);
+
+    if(!dir->is_directory) {
+        LOG(Log::WARNING, "entry specified is not a directory");
+        return;
+    }
+
+    if(dir == nullptr) {
+        LOG(Log::WARNING, "entry does not exist");
+        return;
+    }
+
+    if(m_curr_dir != m_root)
+        delete m_curr_dir;
+
+    m_curr_dir = read_dir(dir->start_cluster_index);
+}
+
+void FAT32::rm(const char *file) noexcept {
 
 }
 
-void FAT32::cd(const char* pth) const noexcept {
+void FAT32::rm(const char *file, const char *args, ...) noexcept {
 
 }
 
-void FAT32::rm(char *file) noexcept {
-
-}
-
-void FAT32::rm(char *file, const char *args, ...) noexcept {
-
-}
-
-const char* FAT32::fs_name() noexcept {
-     return this->name;
+void FAT32::ls() noexcept{
+     printf("\n");
+     print_dir(*m_curr_dir);
  }
-
-void FAT32::load() noexcept {
-
-}
 
 FAT32::dir_entry_t* FAT32::find_entry(dir_t& dir, const char* entry) const noexcept {
     for(int i = 0; i < dir.dir_header.dir_entry_amt; i++)
@@ -612,4 +667,5 @@ void FAT32::print_fat_table() const noexcept {
      for(int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
          printf("%db%10s%d%12s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
      }
+     printf("-------------------------------\n");
  }
