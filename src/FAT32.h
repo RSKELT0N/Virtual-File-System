@@ -42,6 +42,8 @@ private:
     struct metadata_t {
         char disk_name[DISK_NAME_LENGTH];
         uint32_t disk_size;
+        uint32_t superblock_size;
+        uint32_t fat_table_size;
         uint32_t user_size;
         uint32_t cluster_size;
         uint32_t cluster_n;
@@ -123,6 +125,7 @@ private:
 
     void print_fat_table() const noexcept;
     void print_dir(dir_t& dir) const noexcept;
+    void print_super_block() const noexcept;
 
     FILE* get_file_handlr(const char* file_path) noexcept;
 
@@ -133,7 +136,7 @@ private:
     const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t USER_SPACE    = KB(6);
+    static constexpr uint32_t USER_SPACE    = KB(5);
     static constexpr uint32_t CLUSTER_SIZE  = B(200);
     static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
 
@@ -142,6 +145,7 @@ private:
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
     static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
     static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
+    static constexpr uint32_t SUPERBLOCK_SIZE       = sizeof(superblock_t);
 
 private:
     Disk* m_disk;

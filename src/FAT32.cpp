@@ -46,6 +46,8 @@ void FAT32::init() noexcept {
      store_fat_table();
      store_dir(*m_root);
      LOG(Log::INFO, "file system has been initialised.");
+     print_super_block();
+     print_fat_table();
  }
 
  void FAT32::create_disk() noexcept {
@@ -62,10 +64,12 @@ void FAT32::init() noexcept {
  void FAT32::define_superblock() noexcept {
      FAT32::metadata_t data{};
      strcpy(data.disk_name, DISK_NAME);
-     data.cluster_size = CLUSTER_SIZE;
-     data.disk_size    = STORAGE_SIZE;
-     data.cluster_n    = CLUSTER_AMT;
-     data.user_size    = USER_SPACE;
+     data.cluster_size    = CLUSTER_SIZE;
+     data.disk_size       = STORAGE_SIZE;
+     data.cluster_n       = CLUSTER_AMT;
+     data.superblock_size = SUPERBLOCK_SIZE;
+     data.fat_table_size  = FAT_TABLE_SIZE;
+     data.user_size       = USER_SPACE;
 
      m_superblock.data = data;
      m_superblock.superblock_addr = SUPERBLOCK_START_ADDR;
@@ -226,6 +230,7 @@ void FAT32::init() noexcept {
      m_root = read_dir(0);
      m_curr_dir = m_root;
      LOG(Log::INFO, "Disk '" + std::string(DISK_NAME) + "' has been loaded");
+     print_super_block();
      print_fat_table();
  }
 
@@ -639,11 +644,31 @@ FAT32::dir_entry_t* FAT32::find_entry(dir_t& dir, const char* entry) const noexc
     return nullptr;
 }
 
+void FAT32::print_super_block() const noexcept {
+     printf("\n%s%s\n", "   Super block\n", " ---------------");
+
+     printf("  meta data\n-------------\n");
+     printf(" -> Disk:            %s\n", m_superblock.data.disk_name);
+     printf(" -> Disk size:       %db\n", m_superblock.data.disk_size);
+     printf(" -> Superblock size: %db\n", m_superblock.data.superblock_size);
+     printf(" -> Fat table size:  %db\n", m_superblock.data.fat_table_size);
+     printf(" -> User space:      %db\n", m_superblock.data.user_size);
+     printf(" -> Cluster size:    %db\n", m_superblock.data.cluster_size);
+     printf(" -> Cluster amount:  %db\n", m_superblock.data.cluster_n);
+
+     printf("\n  %s\n-----------------\n", "Address space");
+     printf(" -> [superblock : 0x%.8x]\n", m_superblock.superblock_addr);
+     printf(" -> [fat_table  : 0x%.8x]\n", m_superblock.fat_table_addr);
+     printf(" -> [user_space : 0x%.8x]\n", m_superblock.root_dir_addr);
+     printf("%s\n%s\n", "-----------------", "    End");
+ }
+
 void FAT32::print_fat_table() const noexcept {
      printf("\n%s%s\n", "    Fat table\n", " --------------");
      for(int i = 0; i < CLUSTER_AMT; i++) {
          printf("[%d : 0x%.8x]\n", i, m_fat_table[i]);
      }
+     printf("%s\n%s\n\n", "--------------", "    End");
  }
 
  void FAT32::print_dir(dir_t &dir) const noexcept {

@@ -245,6 +245,7 @@ void terminal::wrap_umnt_disk(std::vector<std::string>& parts) {
 
 void terminal::wrap_mnt_disk(std::vector<std::string>& parts) {
     printf("%s  %s  %s", "\n--------------------", parts[2].c_str(), "--------------------\n");
+    LOG(Log::INFO, "Mounting '" + parts[2] + "' as primary FS on the vfs");
     m_vfs->mnt_disk(parts);
     m_env = terminal::INTERNAL;
 }

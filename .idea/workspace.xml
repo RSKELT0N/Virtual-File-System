@@ -18,7 +18,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="889b39f0-a1d5-40fb-9ace-5ecec9338a6c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sampleEntries/text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/sampleEntries/text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/FAT32.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/FAT32.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/FAT32.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/terminal.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/terminal.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,6 +94,12 @@
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="settings.editor.selected.configurable" value="language.cpp.cling" />
   </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Ryan\Documents\FAT32\sampleEntries" />
+      <recent name="C:\Users\Ryan\Documents\FAT32" />
+    </key>
+  </component>
   <component name="RunManager" selected="Makefile Application.all">
     <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FAT32" TARGET_NAME="all" CONFIG_NAME="all" version="1">
       <method v="2">
@@ -137,11 +147,27 @@
       <workItem from="1635812726612" duration="1643000" />
       <workItem from="1635815075941" duration="587000" />
       <workItem from="1635881658311" duration="907000" />
+      <workItem from="1636458345092" duration="1057000" />
+      <workItem from="1636497422677" duration="72000" />
+      <workItem from="1636497773085" duration="2000" />
+      <workItem from="1636497925157" duration="1292000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
