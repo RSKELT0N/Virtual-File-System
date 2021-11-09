@@ -46,6 +46,7 @@ private:
         uint32_t cluster_size;
         uint32_t cluster_n;
 
+//        metadata_t(const char* name, uint32_t& dsk_size, uint32_t& clu_size, uint32_t& clu_n);
     } __attribute__((packed));
 
     typedef struct __attribute__((packed)) {
@@ -93,24 +94,24 @@ public:
 private:
     void init() noexcept;
     void set_up() noexcept;
-    void load() noexcept;
-
     void create_disk() noexcept;
+    void load() noexcept;
+    void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept;
+
     void define_superblock() noexcept;
     void define_fat_table() noexcept;
     dir_t* init_dir(const uint32_t& start_cl, const uint32_t& parent_clu, const char* name) noexcept;
-    void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept;
 
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
-
-    superblock_t load_superblock() noexcept;
+    void load_superblock() noexcept;
     void load_fat_table() noexcept;
+
+    file_ret store_file(const char* path) noexcept;
 
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
     void insert_file(dir_t& dir, const char* path, const char* name) noexcept;
-    file_ret store_file(const char* path) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
     std::string read_file(dir_t& dir, const char* entry_name) noexcept;
@@ -119,12 +120,13 @@ private:
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
     std::vector<uint32_t> get_list_of_clu(const uint32_t& start_clu) noexcept;
-    FILE* get_file_handlr(const char* file_path) noexcept;
-    dir_entry_t* find_entry(dir_t& dir, const char* path) const noexcept;
 
     void print_fat_table() const noexcept;
     void print_dir(dir_t& dir) const noexcept;
 
+    FILE* get_file_handlr(const char* file_path) noexcept;
+
+    dir_entry_t* find_entry(dir_t& dir, const char* path) const noexcept;
 
 private:
     const char* DISK_NAME;

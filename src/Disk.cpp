@@ -15,6 +15,7 @@ Disk::~Disk() {
         exit(EXIT_FAILURE);
     }
     fclose(file);
+    std::cout << "Deleted Disk Class\n";
 }
 
 FILE* Disk::get_file() const noexcept {

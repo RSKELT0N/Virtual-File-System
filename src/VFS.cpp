@@ -1,30 +1,38 @@
 #include "VFS.h"
 
-VFS* VFS::vfs;
-
 constexpr unsigned int hash(const char *s, int off = 0) {
     return !s[off] ? 5381 : (hash(s, off+1)*33) ^ s[off];
+}
+
+VFS::system_t::~system_t() {
+    if(this->fs)
+        delete (FAT32*)fs;
 }
 
 VFS::VFS() {
     disks = new std::unordered_map<std::string, system_t>();
     vfs_cmds = new std::vector<VFS::command_t>();
-    mnted_system = nullptr;
+    mnted_system = (system_t*)malloc(sizeof(system_t));
+    mnted_system->fs_type = "";
+    mnted_system->fs = nullptr;
 
     init_cmds();
 }
 
 VFS::~VFS() {
-    delete vfs;
-    delete mnted_system;
+    if(!mnted_system)
+        delete mnted_system;
     delete disks;
+    std::cout << "Deleted disks\n";
     delete vfs_cmds;
+    std::cout << "Deleted VFS\n";
 }
 
 void VFS::umnt_disk(std::vector<std::string> &parts) {
-    if(mnted_system != nullptr) {
-        delete (FAT32*)mnted_system;
-        mnted_system = nullptr;
+    if(mnted_system->fs != nullptr) {
+        delete (FAT32*)mnted_system->fs;
+        mnted_system->fs = nullptr;
+        mnted_system->fs_type = "";
     } else LOG(Log::WARNING, "There is no system currently mounted");
 }
 
@@ -34,12 +42,14 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
         return;
     }
 
-    if(mnted_system != nullptr)
+    if(mnted_system->fs != nullptr) {
         LOG(Log::WARNING, "Unmount the current system before mounting another");
+        return;
+    }
 
     disks->find(parts[2])->second.fs = typetofs(parts[2].c_str(), disks->find(parts[2])->second.fs_type);
-
-    this->mnted_system = (FAT32*)disks->find(parts[2])->second.fs;
+    this->mnted_system->fs_type = parts[2].c_str();
+    this->mnted_system->fs = (FAT32*)disks->find(parts[2])->second.fs;
 }
 
 void VFS::add_disk(std::vector<std::string>& parts) {
@@ -52,15 +62,15 @@ void VFS::add_disk(std::vector<std::string>& parts) {
         if(fs_types.find(parts[3].c_str()) == fs_types.end()) {
             LOG(Log::WARNING, "File system type does not exist");
             return;
-        } else (*disks).insert(std::make_pair(parts[2], system_t{parts[3].c_str(), nullptr}));
-    } else (*disks).insert(std::make_pair(parts[2], system_t{DEFAULT_FS, nullptr}));
+        } else (*disks).insert(std::make_pair(parts[2], system_t{parts[3].c_str()}));
+    } else (*disks).insert(std::make_pair(parts[2], system_t{DEFAULT_FS}));
 }
 
 void VFS::rm_disk(std::vector<std::string>& parts) {
     if(mnted_system)
-        if(disks->find(parts[2])->second.fs == mnted_system) {
+        if(disks->find(parts[2])->second.fs == mnted_system->fs) {
             delete (FAT32*)disks->find(parts[2])->second.fs;
-            this->mnted_system = nullptr;
+            this->mnted_system->fs = nullptr;
         }
 
     disks->erase(parts[2]);
@@ -74,7 +84,7 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
     }
     for(auto i = disks->begin(); i != disks->end(); i++) {
         printf(" -> (name)%s : (filesystem)%s", i->first.c_str(), i->second.fs_type);
-        if(i->second.fs == mnted_system && i->second.fs != nullptr)
+        if(!(strcmp(i->first.c_str(), mnted_system->fs_type) != 0))
             printf(" %s", "[ Mounted ]");
         printf("\n");
     }
@@ -82,13 +92,7 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
     printf("-----------------------------------------\n");
 }
 
-VFS* VFS::get_vfs() {
-    if(vfs == nullptr)
-        vfs = new VFS();
-    return vfs;
-}
-
-IFS*& VFS::get_mnted_system() noexcept {
+VFS::system_t*& VFS::get_mnted_system() noexcept {
     printf("vfs: %p\n", &mnted_system);
     return mnted_system;
 }

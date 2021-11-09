@@ -1,5 +1,8 @@
 #include "terminal.h"
 
+VFS* terminal::m_vfs;
+terminal::cmd_environment terminal::m_env;
+
 terminal::command_t valid_vfs(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_ls(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_mkdir(std::vector<std::string>& parts) noexcept;
@@ -7,22 +10,24 @@ terminal::command_t valid_cd(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept;
 
-VFS* terminal::m_vfs;
 
 constexpr unsigned int hash(const char *s, int off = 0) {
     return !s[off] ? 5381 : (hash(s, off+1)*33) ^ s[off];
 }
 
 terminal::terminal() {
-    m_vfs = VFS::get_vfs();
+    m_vfs = new VFS();
     m_mnted_system = &(*m_vfs).get_mnted_system();
     m_cmds = new std::unordered_map<std::string, input_t>();
+    m_env = terminal::EXTERNAL;
+
     init_cmds();
 }
 
 terminal::~terminal() {
     delete m_cmds;
     m_vfs->~VFS();
+    std::cout << "Deleted terminal\n";
 }
 
 void terminal::run() noexcept {
@@ -31,11 +36,11 @@ void terminal::run() noexcept {
 
 void terminal::input() noexcept {
     std::string line;
-    printf("enter /help for cmd list\n"
-           "-------------------------\n");
+    printf("enter /help for cmd list\n-------------------"
+           "--\n");
 
     while(1) {
-        printf("-> ");
+        printf("%s", "-> ");
         std::getline(std::cin, line);
 
         if(line.empty())
@@ -46,12 +51,12 @@ void terminal::input() noexcept {
 
         std::vector<std::string> parts = split(line.c_str(), SEPARATOR);
         terminal::command_t command = validate_cmd(parts);
+        terminal::cmd_environment cmd_env = cmdToEnv(command);
 
-        if(command != terminal::help && command != terminal::vfs && command != terminal::clear)
-            if(*m_mnted_system == nullptr && command != terminal::invalid) {
-                LOG(Log::WARNING, "There is no mounted system");
-                continue;
-            }
+        if(cmd_env != m_env && cmd_env != terminal::HYBRID) {
+            LOG(Log::WARNING, "Command is used within the wrong context");
+            continue;
+        }
 
         switch(command) {
             case terminal::help: {
@@ -71,15 +76,15 @@ void terminal::input() noexcept {
                 break;
             }
             case terminal::mkdir: {
-                ((FAT32*)*m_mnted_system)->mkdir(parts[1].c_str());
+                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->mkdir(parts[1].c_str());
                 break;
             }
             case terminal::cd: {
-                ((FAT32*)*m_mnted_system)->cd(parts[1].c_str());
+                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cd(parts[1].c_str());
                 break;
             }
             case terminal::ls: {
-                ((FAT32*)*m_mnted_system)->ls();
+                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->ls();
                 break;
             }
             case terminal::invalid: printf("command is not found\n"); break;
@@ -123,8 +128,10 @@ void terminal::determine_flag(terminal::command_t cmd, std::vector<std::string>&
     for(auto i = m_cmds->begin(); i != m_cmds->end(); i++) {
         if(cmd == i->second.cmd_name) {
             for(int j = 0; j < i->second.flags.size(); j++) {
-                if(parts[1] == i->second.flags[j].name)
+                if(parts[1] == i->second.flags[j].name) {
                     i->second.flags[j].func_ptr(parts);
+                    return;
+                }
             }
         }
     }
@@ -136,6 +143,20 @@ void terminal::print_help() noexcept {
         printf(" -> %s - %s\n", i->first.c_str(), i->second.cmd_desc);
     }
     printf("---------  %s  ---------\n", "End");
+}
+
+terminal::cmd_environment terminal::cmdToEnv(command_t cmd) noexcept {
+    switch(cmd) {
+        case terminal::vfs: return terminal::HYBRID;
+        case terminal::help: return terminal::EXTERNAL;
+        case terminal::clear: return terminal::HYBRID;
+        case terminal::mkdir: return terminal::INTERNAL;
+        case terminal::ls: return terminal::INTERNAL;
+        case terminal::touch: return terminal::INTERNAL;
+        case terminal::cd: return terminal::INTERNAL;
+        case terminal::cp: return terminal::INTERNAL;
+        default: return terminal::EXTERNAL;
+    }
 }
 
 void terminal::clear_scr() const noexcept {
@@ -219,10 +240,13 @@ void terminal::wrap_add_disk(std::vector<std::string>& parts) {
 
 void terminal::wrap_umnt_disk(std::vector<std::string>& parts) {
     m_vfs->umnt_disk(parts);
+    m_env = terminal::EXTERNAL;
 }
 
 void terminal::wrap_mnt_disk(std::vector<std::string>& parts) {
+    printf("%s  %s  %s", "\n--------------------", parts[2].c_str(), "--------------------\n");
     m_vfs->mnt_disk(parts);
+    m_env = terminal::INTERNAL;
 }
 
 void terminal::wrap_rm_disk(std::vector<std::string>& parts) {
