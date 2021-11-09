@@ -662,5 +662,6 @@ void FAT32::print_fat_table() const noexcept {
      for(int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
          printf("%db%10s%d%12s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
      }
-     printf("-------------------------------\n");
+     printf("-------------------------------");
+     printf("\n");
  }
