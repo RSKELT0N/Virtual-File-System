@@ -78,6 +78,13 @@ private:
         dir_entry_t* dir_entries;
     } dir_t;
 
+    struct entry_ret_t {
+        dir_t* m_dir;
+        dir_entry_t* m_entry;
+
+        entry_ret_t(dir_t* dir, dir_entry_t* entry) : m_dir(dir), m_entry(entry) {};
+    };
+
 public:
     explicit FAT32(const char* disk_name);
     ~FAT32();
@@ -88,7 +95,7 @@ public:
 public:
     void cd(const char* pth)  noexcept override;
      void mkdir(const char* dir) noexcept override;
-     void rm(const char* file) noexcept override;
+     void rm(std::vector<std::string>& tokens) noexcept override;
      void rm(const char *file, const char* args, ...) noexcept override;
      void cp(const char* src, const char* dst) noexcept override;
      void ls() noexcept override;
@@ -114,6 +121,7 @@ private:
 
     void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
     void insert_file(dir_t& dir, const char* path, const char* name) noexcept;
+    void delete_entry(entry_ret_t& entry) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
     std::string read_file(dir_t& dir, const char* entry_name) noexcept;
@@ -122,6 +130,7 @@ private:
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
     std::vector<uint32_t> get_list_of_clu(const uint32_t& start_clu) noexcept;
+    void rm_entr_mem(dir_t& dir, const char* name) noexcept;
 
     void print_fat_table() const noexcept;
     void print_dir(dir_t& dir) const noexcept;
@@ -129,7 +138,8 @@ private:
 
     FILE* get_file_handlr(const char* file_path) noexcept;
 
-    dir_entry_t* find_entry(dir_t& dir, const char* path) const noexcept;
+    dir_entry_t* find_entry(dir_t& dir, const char* path, uint8_t shd_exst) const noexcept;
+    entry_ret_t* parsePath(std::vector<std::string>& paths) noexcept;
 
 private:
     const char* DISK_NAME;

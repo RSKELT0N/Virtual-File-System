@@ -18,6 +18,7 @@ public:
         ls,
         mkdir,
         cd,
+        rm,
         touch,
         cp,
         mv,
@@ -61,6 +62,7 @@ public:
     friend terminal::command_t valid_cd(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_help(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept;
+    friend terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept;
 
 private:
     void input() noexcept;
@@ -87,6 +89,7 @@ private:
     VFS::system_t** m_mnted_system;
     std::unordered_map<std::string, input_t>* m_cmds;
     static cmd_environment m_env;
+    std::string path;
 };
 
 #endif // _TERMINAL_H_

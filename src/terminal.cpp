@@ -9,6 +9,7 @@ terminal::command_t valid_mkdir(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_cd(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept;
+terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept;
 
 
 constexpr unsigned int hash(const char *s, int off = 0) {
@@ -20,6 +21,7 @@ terminal::terminal() {
     m_mnted_system = &(*m_vfs).get_mnted_system();
     m_cmds = new std::unordered_map<std::string, input_t>();
     m_env = terminal::EXTERNAL;
+    path = "/";
 
     init_cmds();
 }
@@ -40,7 +42,10 @@ void terminal::input() noexcept {
            "--\n");
 
     while(1) {
-        printf("%s", "-> ");
+        if(m_env == terminal::EXTERNAL)
+            printf("%s", "-> ");
+        else printf("%s> ", path.c_str());
+
         std::getline(std::cin, line);
 
         if(line.empty())
@@ -87,6 +92,11 @@ void terminal::input() noexcept {
                 ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->ls();
                 break;
             }
+            case terminal::rm: {
+                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->rm(parts);
+                break;
+            }
+
             case terminal::invalid: printf("command is not found\n"); break;
             default: break;
         }
@@ -96,9 +106,10 @@ void terminal::input() noexcept {
 void terminal::init_cmds() noexcept {
     (*m_cmds)["/help"]  = input_t{terminal::help, "lists commands to enter", {}, &valid_help};
     (*m_cmds)["/vfs"]   = input_t{terminal::vfs, "allows the user to access control of the virtual file system",{flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk), flag_t("ls", wrap_ls_disk), flag_t{"umnt", wrap_umnt_disk}},&valid_vfs};
-    (*m_cmds)["/ls"]    = input_t{terminal::ls, "display the entries within the current working directory", {}, &valid_ls};
-    (*m_cmds)["/mkdir"] = input_t{terminal::mkdir, "create directory within current directory", {}, &valid_mkdir};
-    (*m_cmds)["/cd"]    = input_t{terminal::cd, "change directory", {}, &valid_cd};
+    (*m_cmds)["ls"]     = input_t{terminal::ls, "display the entries within the current working directory", {}, &valid_ls};
+    (*m_cmds)["mkdir"]  = input_t{terminal::mkdir, "create directory within current directory", {}, &valid_mkdir};
+    (*m_cmds)["cd"]     = input_t{terminal::cd, "change directory", {}, &valid_cd};
+    (*m_cmds)["rm"]     = input_t{terminal::rm, "removes an entry within the file system", {}, &valid_rm};
     (*m_cmds)["/clear"] = input_t{terminal::clear, "clears screen", {}, &valid_clear};
 }
 
@@ -147,15 +158,16 @@ void terminal::print_help() noexcept {
 
 terminal::cmd_environment terminal::cmdToEnv(command_t cmd) noexcept {
     switch(cmd) {
-        case terminal::vfs: return terminal::HYBRID;
-        case terminal::help: return terminal::EXTERNAL;
+        case terminal::vfs:   return terminal::HYBRID;
+        case terminal::help:  return terminal::EXTERNAL;
         case terminal::clear: return terminal::HYBRID;
         case terminal::mkdir: return terminal::INTERNAL;
-        case terminal::ls: return terminal::INTERNAL;
+        case terminal::ls:    return terminal::INTERNAL;
         case terminal::touch: return terminal::INTERNAL;
-        case terminal::cd: return terminal::INTERNAL;
-        case terminal::cp: return terminal::INTERNAL;
-        default: return terminal::EXTERNAL;
+        case terminal::cd:    return terminal::INTERNAL;
+        case terminal::rm:    return terminal::INTERNAL;
+        case terminal::cp:    return terminal::INTERNAL;
+        default:              return terminal::EXTERNAL;
     }
 }
 
@@ -220,6 +232,14 @@ terminal::command_t valid_cd(std::vector<std::string>& parts) noexcept {
         return terminal::invalid;
 
     return terminal::cd;
+}
+
+
+terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept {
+    if(parts.size() <= 1)
+        return terminal::invalid;
+
+    return terminal::rm;
 }
 
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept {
