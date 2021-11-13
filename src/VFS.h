@@ -17,13 +17,13 @@ struct VFS {
 
 public:
 
-     typedef struct command_t {
+      struct command_t {
         const char* flag;
         const char* desc;
         command_t(const char* flg, const char* dsc) : flag(flg), desc(dsc) {};
     };
 
-     typedef struct system_t {
+      struct system_t {
          const char* fs_type;
          IFS* fs = nullptr;
          system_t(const char* type) : fs_type(type) {};

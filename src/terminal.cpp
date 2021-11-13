@@ -103,6 +103,21 @@ void terminal::input() noexcept {
     }
 }
 
+terminal::cmd_environment terminal::cmdToEnv(command_t cmd) noexcept {
+    switch(cmd) {
+        case terminal::vfs:   return terminal::HYBRID;
+        case terminal::help:  return terminal::EXTERNAL;
+        case terminal::clear: return terminal::HYBRID;
+        case terminal::mkdir: return terminal::INTERNAL;
+        case terminal::ls:    return terminal::INTERNAL;
+        case terminal::touch: return terminal::INTERNAL;
+        case terminal::cd:    return terminal::INTERNAL;
+        case terminal::rm:    return terminal::INTERNAL;
+        case terminal::cp:    return terminal::INTERNAL;
+        default:              return terminal::EXTERNAL;
+    }
+}
+
 void terminal::init_cmds() noexcept {
     (*m_cmds)["/help"]  = input_t{terminal::help, "lists commands to enter", {}, &valid_help};
     (*m_cmds)["/vfs"]   = input_t{terminal::vfs, "allows the user to access control of the virtual file system",{flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk), flag_t("ls", wrap_ls_disk), flag_t{"umnt", wrap_umnt_disk}},&valid_vfs};
@@ -111,19 +126,6 @@ void terminal::init_cmds() noexcept {
     (*m_cmds)["cd"]     = input_t{terminal::cd, "change directory", {}, &valid_cd};
     (*m_cmds)["rm"]     = input_t{terminal::rm, "removes an entry within the file system", {}, &valid_rm};
     (*m_cmds)["/clear"] = input_t{terminal::clear, "clears screen", {}, &valid_clear};
-}
-
-std::vector<std::string> terminal::split(const char* line, char sep) noexcept {
-    std::vector<std::string> tokens;
-    std::stringstream ss(line);
-    std::string x;
-
-    while ((getline(ss, x, sep))) {
-        if (x != "")
-            tokens.push_back(x);
-    }
-
-    return tokens;
 }
 
 terminal::command_t terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
@@ -148,6 +150,19 @@ void terminal::determine_flag(terminal::command_t cmd, std::vector<std::string>&
     }
 }
 
+std::vector<std::string> terminal::split(const char* line, char sep) noexcept {
+    std::vector<std::string> tokens;
+    std::stringstream ss(line);
+    std::string x;
+
+    while ((getline(ss, x, sep))) {
+        if (x != "")
+            tokens.push_back(x);
+    }
+
+    return tokens;
+}
+
 void terminal::print_help() noexcept {
     printf("---------  %s  ---------\n", "Help");
     for(auto i = m_cmds->begin(); i != m_cmds->end(); i++) {
@@ -156,20 +171,6 @@ void terminal::print_help() noexcept {
     printf("---------  %s  ---------\n", "End");
 }
 
-terminal::cmd_environment terminal::cmdToEnv(command_t cmd) noexcept {
-    switch(cmd) {
-        case terminal::vfs:   return terminal::HYBRID;
-        case terminal::help:  return terminal::EXTERNAL;
-        case terminal::clear: return terminal::HYBRID;
-        case terminal::mkdir: return terminal::INTERNAL;
-        case terminal::ls:    return terminal::INTERNAL;
-        case terminal::touch: return terminal::INTERNAL;
-        case terminal::cd:    return terminal::INTERNAL;
-        case terminal::rm:    return terminal::INTERNAL;
-        case terminal::cp:    return terminal::INTERNAL;
-        default:              return terminal::EXTERNAL;
-    }
-}
 
 void terminal::clear_scr() const noexcept {
     printf(CLEAR_SCR);
@@ -245,7 +246,8 @@ terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept {
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept {
     if(parts.size() == 1)
         return terminal::help;
-    else terminal::invalid;
+
+    return terminal::invalid;
 }
 
 terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept {

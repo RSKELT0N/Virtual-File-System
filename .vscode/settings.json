@@ -1,6 +1,6 @@
 {
-    "editor.fontFamily": "monospace",
     "files.associations": {
+        "new": "cpp",
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
@@ -41,7 +41,6 @@
         "iostream": "cpp",
         "istream": "cpp",
         "limits": "cpp",
-        "new": "cpp",
         "ostream": "cpp",
         "sstream": "cpp",
         "stdexcept": "cpp",

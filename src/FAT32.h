@@ -3,8 +3,9 @@
 
 #include "VFS.h"
 #include "Disk.h"
-#include <string.h>
+#include <string>
 #include <vector>
+#include <string.h>
 
 #define B(__size__)               (__size__)
 #define KB(__size__)              (B(__size__) * 1024)
@@ -139,7 +140,7 @@ private:
     FILE* get_file_handlr(const char* file_path) noexcept;
 
     dir_entry_t* find_entry(dir_t& dir, const char* path, uint8_t shd_exst) const noexcept;
-    entry_ret_t* parsePath(std::vector<std::string>& paths) noexcept;
+    entry_ret_t* parsePath(std::vector<std::string>& paths, uint8_t shd_exst) noexcept;
 
 private:
     const char* DISK_NAME;

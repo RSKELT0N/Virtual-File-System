@@ -442,6 +442,7 @@ std::string FAT32::read_file(dir_t& dir, const char* entry_name) noexcept {
 FAT32::file_ret FAT32::store_file(const char *path) noexcept {
      if(access(path, F_OK) == -1) {
          LOG(Log::WARNING, "file specified does not exist");
+         return file_ret{0, nullptr};
      }
 
      char buffer[CLUSTER_SIZE];
@@ -555,29 +556,32 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
     store_dir(*(entry.m_dir));
  }
 
- FAT32::entry_ret_t* FAT32::parsePath(std::vector<std::string>& path) noexcept {
+ FAT32::entry_ret_t* FAT32::parsePath(std::vector<std::string>& path, uint8_t shd_exst) noexcept {
      FAT32::entry_ret_t* ret = (entry_ret_t*)malloc(sizeof(entry_ret_t));
 
      dir_t* curr_dir = m_curr_dir;
      dir_entry_t* tmp_entr;
 
      for(int i = 0; i < path.size() - 1; i++) {
-        dir_entry_t* tmp_entr = find_entry(*curr_dir, path[i].c_str(), 1);
+        dir_entry_t* tmp_entr = find_entry(*curr_dir, path[i].c_str(), shd_exst);
 
-        if(tmp_entr == nullptr) {
+        if(tmp_entr == nullptr && shd_exst) {
+            LOG(Log::WARNING, "directory '" + path[i] + "', could not be found");
+            delete ret;
             return nullptr;
         }
 
         if(curr_dir != m_curr_dir)
             delete curr_dir;
         curr_dir = read_dir(tmp_entr->start_cluster_index);
-       
-       delete tmp_entr;
+
      }
 
-     tmp_entr = find_entry(*curr_dir, path[path.size() - 1].c_str(), 1);
+     tmp_entr = find_entry(*curr_dir, path[path.size() - 1].c_str(), shd_exst);
      
-     if(tmp_entr == nullptr) {
+     if(tmp_entr == nullptr && shd_exst) {
+         LOG(Log::WARNING, "file '" + path[path.size() - 1] + "', could not be found");
+         delete ret;
          return nullptr;
     }
 
@@ -683,41 +687,45 @@ FAT32::file_ret FAT32::store_file(const char *path) noexcept {
 }
 
 void FAT32::mkdir(const char *dir) noexcept {
-    dir_entry_t* tmp = find_entry(*m_curr_dir, dir, 0);
+    std::vector<std::string> tokens = split(dir, '/');
+    FAT32::entry_ret_t* ret = parsePath(tokens, 0x0);
 
-    if(tmp != nullptr) {
+    if(ret->m_entry != nullptr) {
         LOG(Log::WARNING, "entry already exists with name specified");
         return;
     }
-
-     insert_dir(*m_curr_dir, dir);
+    insert_dir(*ret->m_dir, tokens[tokens.size() - 1].c_str());
+    delete ret;
 }
 
 void FAT32::cd(const char* pth) noexcept {
-    dir_entry_t* dir = find_entry(*m_curr_dir, pth, 1);
+     std::vector<std::string> tokens = split(pth, '/');
+     FAT32::entry_ret_t* ret = parsePath(tokens, 0x1);
 
-    if(!dir->is_directory) {
-        LOG(Log::WARNING, "entry specified is not a directory");
-        return;
-    }
+     if(ret->m_entry == nullptr) {
+         LOG(Log::WARNING, "entry does not exist");
+         return;
+     }
 
-    if(dir == nullptr) {
-        LOG(Log::WARNING, "entry does not exist");
-        return;
-    }
+     if(!ret->m_entry->is_directory) {
+         LOG(Log::WARNING, "entry '" + std::string(ret->m_entry->dir_entry_name) + "' is not a directory");
+         return;
+     }
 
     if(m_curr_dir != m_root)
         delete m_curr_dir;
 
-    m_curr_dir = read_dir(dir->start_cluster_index);
+    m_curr_dir = read_dir(ret->m_entry->start_cluster_index);
+    delete ret;
 }
 
 void FAT32::rm(std::vector<std::string>& tokens) noexcept {
     for(int i = 1; i < tokens.size(); i++) {
         std::vector<std::string> parts = split(tokens[i].c_str(), '/');
-        entry_ret_t* entry = parsePath(parts);
+        entry_ret_t* entry = parsePath(parts, 0x1);
 
         if(entry == nullptr) {
+            LOG(Log::WARNING, "Entry in specified file does not exist");
             return;
         }
 
@@ -727,6 +735,7 @@ void FAT32::rm(std::vector<std::string>& tokens) noexcept {
         }
 
         delete_entry(*entry);
+        delete entry;
     }
 }
 
@@ -747,7 +756,7 @@ FAT32::dir_entry_t* FAT32::find_entry(dir_t& dir, const char* entry, uint8_t shd
     }
 
     if(shd_exst)
-        LOG(Log::WARNING, "Entry '" + std::string(entry) + "', could not be found");
+        LOG(Log::WARNING, "'" + std::string(entry) + "' could not be found");
     return nullptr;
 }
 

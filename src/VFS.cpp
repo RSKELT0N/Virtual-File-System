@@ -125,4 +125,5 @@ IFS* VFS::typetofs(const char* name, const char *fs_type) noexcept {
             return (FAT32*)new FAT32(name);
         }
     }
+    return (FAT32*)new FAT32(name);
 }
