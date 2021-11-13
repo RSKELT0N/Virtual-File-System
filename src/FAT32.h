@@ -3,9 +3,8 @@
 
 #include "VFS.h"
 #include "Disk.h"
-#include <string>
-#include <vector>
 #include <string.h>
+#include <vector>
 
 #define B(__size__)               (__size__)
 #define KB(__size__)              (B(__size__) * 1024)
@@ -24,18 +23,18 @@
 class FAT32 : public IFS {
 
 public:
-     enum clu_values_t {
+    enum clu_values_t {
         UNALLOCATED_CLUSTER = 0x00000000,
-        BAD_CLUSTER         = 0x00000FF7,
-        EOF_CLUSTER         = 0x00000FF8,
-        ALLOCATED_CLUSTER   = 0x00000001
+        BAD_CLUSTER = 0x00000FF7,
+        EOF_CLUSTER = 0x00000FF8,
+        ALLOCATED_CLUSTER = 0x00000001
     };
 
-     struct file_ret {
+    struct file_ret {
         uint32_t start_cluster;
         FILE* fd;
 
-        file_ret(uint32_t clu, FILE* fd) : start_cluster(clu), fd(fd) {};
+        file_ret(uint32_t clu, FILE* fd) : start_cluster(clu), fd(fd) { };
     };
 
 private:
@@ -49,7 +48,7 @@ private:
         uint32_t cluster_size;
         uint32_t cluster_n;
 
-//        metadata_t(const char* name, uint32_t& dsk_size, uint32_t& clu_size, uint32_t& clu_n);
+        //        metadata_t(const char* name, uint32_t& dsk_size, uint32_t& clu_size, uint32_t& clu_n);
     } __attribute__((packed));
 
     typedef struct __attribute__((packed)) {
@@ -83,7 +82,7 @@ private:
         dir_t* m_dir;
         dir_entry_t* m_entry;
 
-        entry_ret_t(dir_t* dir, dir_entry_t* entry) : m_dir(dir), m_entry(entry) {};
+        entry_ret_t(dir_t* dir, dir_entry_t* entry) : m_dir(dir), m_entry(entry) { };
     };
 
 public:
@@ -95,11 +94,11 @@ public:
 
 public:
     void cd(const char* pth)  noexcept override;
-     void mkdir(const char* dir) noexcept override;
-     void rm(std::vector<std::string>& tokens) noexcept override;
-     void rm(const char *file, const char* args, ...) noexcept override;
-     void cp(const char* src, const char* dst) noexcept override;
-     void ls() noexcept override;
+    void mkdir(const char* dir) noexcept override;
+    void rm(std::vector<std::string>& tokens) noexcept override;
+    void rm(const char* file, const char* args, ...) noexcept override;
+    void cp(const char* src, const char* dst) noexcept override;
+    void ls() noexcept override;
 
 private:
     void init() noexcept;
@@ -147,16 +146,16 @@ private:
     const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t USER_SPACE    = KB(5);
-    static constexpr uint32_t CLUSTER_SIZE  = B(200);
-    static constexpr uint32_t CLUSTER_AMT   = USER_SPACE / CLUSTER_SIZE;
+    static constexpr uint32_t USER_SPACE = KB(5);
+    static constexpr uint32_t CLUSTER_SIZE = B(200);
+    static constexpr uint32_t CLUSTER_AMT = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr size_t   STORAGE_SIZE = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
-    static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
-    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
-    static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
-    static constexpr uint32_t SUPERBLOCK_SIZE       = sizeof(superblock_t);
+    static constexpr uint32_t FAT_TABLE_START_ADDR = sizeof(superblock_t);
+    static constexpr uint32_t FAT_TABLE_SIZE = sizeof(uint32_t) * CLUSTER_AMT;
+    static constexpr uint32_t ROOT_START_ADDR = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
+    static constexpr uint32_t SUPERBLOCK_SIZE = sizeof(superblock_t);
 
 private:
     Disk* m_disk;
