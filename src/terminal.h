@@ -63,12 +63,16 @@ public:
     friend terminal::command_t valid_help(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept;
+    friend terminal::command_t valid_touch(std::vector<std::string>& parts) noexcept;
+    friend terminal::command_t valid_mv(std::vector<std::string>& parts) noexcept;
+    friend terminal::command_t valid_cp(std::vector<std::string>& parts) noexcept;
 
 private:
     void input() noexcept;
 
     void init_cmds() noexcept;
     command_t validate_cmd(std::vector<std::string>& parts) noexcept;
+    void determine_cmd(command_t cmd, std::vector<std::string>& parts) noexcept;
     void determine_flag(command_t cmd, std::vector<std::string>&) noexcept;
     terminal::cmd_environment cmdToEnv(command_t cmd) noexcept;
     void print_help() noexcept;

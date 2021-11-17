@@ -102,7 +102,7 @@ void VFS::init_cmds() noexcept {
     command_t add = {"add", "adds a system to the virtual file system                  | -> [/vfs add <DISK_NAME> <FS_TYPE>]"};
     command_t rm = {"rm", "removes a system to the virtual file system                | -> [/vfs rm <DISK_NAME>]"};
     command_t mnt = {"mnt", "initialises the file system and mounts it towards the vfs | -> [/vfs mnt <DISK_NAME>]"};
-    command_t umnt = {"umnt", "deletes file system data/disk from vfs                   | -> [/vfs umnt <DISK_NAME>]"};
+    command_t umnt = {"umnt", "deletes file system data/disk from vfs                   | -> [/vfs umnt"};
 
     vfs_cmds->push_back(ls);
     vfs_cmds->push_back(add);

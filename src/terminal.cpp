@@ -10,6 +10,9 @@ terminal::command_t valid_cd(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_clear(std::vector<std::string>& parts) noexcept;
 terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept;
+terminal::command_t valid_touch(std::vector<std::string>& parts) noexcept;
+terminal::command_t valid_mv(std::vector<std::string>& parts) noexcept;
+terminal::command_t valid_cp(std::vector<std::string>& parts) noexcept;
 
 
 constexpr unsigned int hash(const char *s, int off = 0) {
@@ -51,6 +54,9 @@ void terminal::input() noexcept {
         if(line.empty())
             continue;
 
+        if(line == "/fat")
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->print_fat_table();
+
         if(line == "exit")
             return;
 
@@ -61,45 +67,62 @@ void terminal::input() noexcept {
         if(cmd_env != m_env && cmd_env != terminal::HYBRID) {
             LOG(Log::WARNING, "Command is used within the wrong context");
             continue;
+        } else determine_cmd(command, parts);
+    }
+}
+
+void terminal::determine_cmd(command_t cmd, std::vector<std::string>& parts) noexcept {
+    switch(cmd) {
+        case terminal::help: {
+            print_help();
+            break;
+        }
+        case terminal::vfs: {
+            if(parts.size() < 2) {
+                m_vfs->vfs_help();
+                break;
+            }
+            determine_flag(cmd, parts);
+            break;
+        }
+        case terminal::clear: {
+            clear_scr();
+            break;
+        }
+        case terminal::mkdir: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->mkdir(parts[1].c_str());
+            break;
+        }
+        case terminal::cd: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cd(parts[1].c_str());
+            break;
+        }
+        case terminal::ls: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->ls();
+            break;
+        }
+        case terminal::rm: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->rm(parts);
+            break;
+        }
+        case terminal::touch: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->touch(parts);
+            break;
+        }
+        case terminal::mv: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->mv(parts);
+            break;
+        }
+        case terminal::cp: {
+            if(parts[1] == "ext")
+                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cp_ext(parts[2].c_str(), parts[3].c_str());
+            else ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cp(parts[1].c_str(), parts[2].c_str());
+            break;
         }
 
-        switch(command) {
-            case terminal::help: {
-                print_help();
-                break;
-            }
-            case terminal::vfs: {
-                if(parts.size() < 2) {
-                    m_vfs->vfs_help();
-                    break;
-                }
-                determine_flag(command, parts);
-                break;
-            }
-            case terminal::clear: {
-                clear_scr();
-                break;
-            }
-            case terminal::mkdir: {
-                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->mkdir(parts[1].c_str());
-                break;
-            }
-            case terminal::cd: {
-                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cd(parts[1].c_str());
-                break;
-            }
-            case terminal::ls: {
-                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->ls();
-                break;
-            }
-            case terminal::rm: {
-                ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->rm(parts);
-                break;
-            }
 
-            case terminal::invalid: printf("command is not found\n"); break;
-            default: break;
-        }
+        case terminal::invalid: printf("command is not found\n"); break;
+        default: break;
     }
 }
 
@@ -114,18 +137,22 @@ terminal::cmd_environment terminal::cmdToEnv(command_t cmd) noexcept {
         case terminal::cd:    return terminal::INTERNAL;
         case terminal::rm:    return terminal::INTERNAL;
         case terminal::cp:    return terminal::INTERNAL;
-        default:              return terminal::EXTERNAL;
+        case terminal::mv:    return terminal::INTERNAL;
+        default:              return m_env;
     }
 }
 
 void terminal::init_cmds() noexcept {
-    (*m_cmds)["/help"]  = input_t{terminal::help, "lists commands to enter", {}, &valid_help};
-    (*m_cmds)["/vfs"]   = input_t{terminal::vfs, "allows the user to access control of the virtual file system",{flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk), flag_t("ls", wrap_ls_disk), flag_t{"umnt", wrap_umnt_disk}},&valid_vfs};
-    (*m_cmds)["ls"]     = input_t{terminal::ls, "display the entries within the current working directory", {}, &valid_ls};
-    (*m_cmds)["mkdir"]  = input_t{terminal::mkdir, "create directory within current directory", {}, &valid_mkdir};
-    (*m_cmds)["cd"]     = input_t{terminal::cd, "change directory", {}, &valid_cd};
-    (*m_cmds)["rm"]     = input_t{terminal::rm, "removes an entry within the file system", {}, &valid_rm};
+    (*m_cmds)["/help"]  = input_t{terminal::help,  "lists commands to enter", {}, &valid_help};
+    (*m_cmds)["/vfs"]   = input_t{terminal::vfs,   "allows the user to access control of the virtual file system",{flag_t("add", wrap_add_disk), flag_t("rm", wrap_rm_disk), flag_t("mnt", wrap_mnt_disk), flag_t("ls", wrap_ls_disk), flag_t{"umnt", wrap_umnt_disk}},&valid_vfs};
     (*m_cmds)["/clear"] = input_t{terminal::clear, "clears screen", {}, &valid_clear};
+    (*m_cmds)["ls"]     = input_t{terminal::ls,    "display the entries within the current working directory", {}, &valid_ls};
+    (*m_cmds)["mkdir"]  = input_t{terminal::mkdir, "create directory within current directory", {}, &valid_mkdir};
+    (*m_cmds)["cd"]     = input_t{terminal::cd,    "changes the current directory within the file system", {}, &valid_cd};
+    (*m_cmds)["rm"]     = input_t{terminal::rm,    "removes an entry within the file system", {}, &valid_rm};
+    (*m_cmds)["touch"]  = input_t{terminal::touch, "creates an entry within the file system", {}, &valid_touch};
+    (*m_cmds)["mv"]     = input_t{terminal::mv,    "moves an entry towards a different directory", {}, &valid_mv};
+    (*m_cmds)["cp"]     = input_t{terminal::cp,    "copies an entry within the specified directory", {}, &valid_cp};
 }
 
 terminal::command_t terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
@@ -241,6 +268,24 @@ terminal::command_t valid_rm(std::vector<std::string>& parts) noexcept {
         return terminal::invalid;
 
     return terminal::rm;
+}
+
+terminal::command_t valid_touch(std::vector<std::string>& parts) noexcept {
+    if(parts.size() == 2)
+        return terminal::touch;
+    else return terminal::invalid;
+}
+
+terminal::command_t valid_mv(std::vector<std::string>& parts) noexcept {
+    if(parts.size() < 3 || parts.size() > 4)
+        return terminal::invalid;
+    else return terminal::touch;
+}
+
+terminal::command_t valid_cp(std::vector<std::string>& parts) noexcept {
+    if(parts.size() <= 4)
+        return terminal::touch;
+    else return terminal::invalid;
 }
 
 terminal::command_t valid_help(std::vector<std::string>& parts) noexcept {
