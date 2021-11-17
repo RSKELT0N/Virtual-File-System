@@ -22,6 +22,7 @@ public:
         touch,
         cp,
         mv,
+        cat,
         clear,
         invalid
     };
@@ -66,6 +67,7 @@ public:
     friend terminal::command_t valid_touch(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_mv(std::vector<std::string>& parts) noexcept;
     friend terminal::command_t valid_cp(std::vector<std::string>& parts) noexcept;
+    friend terminal::command_t valid_cat(std::vector<std::string>& parts) noexcept;
 
 private:
     void input() noexcept;

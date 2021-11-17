@@ -92,6 +92,7 @@ public:
     void cp(const char* src, const char* dst) noexcept override;
     void cp_ext(const char* src, const char* dst) noexcept override;
     void touch(std::vector<std::string>& tokens) noexcept override;
+    void cat(const char* path) noexcept override;
     void ls() noexcept override;
 
 private:
@@ -109,13 +110,14 @@ private:
     void store_superblock() noexcept;
     void store_fat_table() noexcept;
     void store_dir(dir_t& directory) noexcept;
+    void save_dir(dir_t& directory) noexcept;
 
     void load_superblock() noexcept;
     void load_fat_table() noexcept;
 
     int32_t store_file(const char* path) noexcept;
 
-    void insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
+    uint32_t insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
     void insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept;
     void insert_ext_file(dir_t& dir, const char* path, const char* name) noexcept;
 
@@ -146,8 +148,8 @@ private:
     const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t USER_SPACE = KB(7);
-    static constexpr uint32_t CLUSTER_SIZE = B(200);
+    static constexpr uint32_t USER_SPACE = KB(20);
+    static constexpr uint32_t CLUSTER_SIZE = KB(1);
     static constexpr uint32_t CLUSTER_AMT = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;

@@ -18,6 +18,7 @@ protected:
     virtual void cp(const char* src, const char* dst) noexcept = 0;
     virtual void cp_ext(const char* src, const char* dst) noexcept = 0;
     virtual void touch(std::vector<std::string>& tokens) noexcept = 0;
+    virtual void cat(const char* path) noexcept = 0;
     virtual void ls() noexcept = 0;
 };
 

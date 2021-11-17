@@ -113,6 +113,10 @@ void terminal::determine_cmd(command_t cmd, std::vector<std::string>& parts) noe
             ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->mv(parts);
             break;
         }
+        case terminal::cat: {
+            ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cat(parts[1].c_str());
+            break;
+        }
         case terminal::cp: {
             if(parts[1] == "ext")
                 ((FAT32*)((VFS::system_t*)*m_mnted_system)->fs)->cp_ext(parts[2].c_str(), parts[3].c_str());
@@ -153,6 +157,7 @@ void terminal::init_cmds() noexcept {
     (*m_cmds)["touch"]  = input_t{terminal::touch, "creates an entry within the file system", {}, &valid_touch};
     (*m_cmds)["mv"]     = input_t{terminal::mv,    "moves an entry towards a different directory", {}, &valid_mv};
     (*m_cmds)["cp"]     = input_t{terminal::cp,    "copies an entry within the specified directory", {}, &valid_cp};
+    (*m_cmds)["cat"]    = input_t{terminal::cat,   "print bytes found at entry", {}, &valid_cp};
 }
 
 terminal::command_t terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
@@ -285,6 +290,12 @@ terminal::command_t valid_mv(std::vector<std::string>& parts) noexcept {
 terminal::command_t valid_cp(std::vector<std::string>& parts) noexcept {
     if(parts.size() <= 4)
         return terminal::touch;
+    else return terminal::invalid;
+}
+
+terminal::command_t valid_cat(std::vector<std::string>& parts) noexcept {
+    if(parts.size() == 2)
+        return terminal::cat;
     else return terminal::invalid;
 }
 
