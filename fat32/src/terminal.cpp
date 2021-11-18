@@ -1,4 +1,4 @@
-#include "terminal.h"
+#include "../include/terminal.h"
 
 VFS* terminal::m_vfs;
 terminal::cmd_environment terminal::m_env;

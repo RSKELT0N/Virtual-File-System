@@ -2,7 +2,7 @@
 // Created by Ryan Skelton on 01/10/2020.
 //
 
-#include "Log.h"
+#include "../include/Log.h"
 
 Log *Log::logInstance = NULL;
 

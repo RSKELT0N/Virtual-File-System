@@ -1,11 +1,12 @@
 #ifndef _TERMINAL_H_
 #define _TERMINAL_H_
 
-#include "VFS.h"
-#include "FAT32.h"
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "VFS.h"
+#include "FAT32.h"
 
 #define SEPARATOR (char)' '
 #define CLEAR_SCR (const char*)"\033c"

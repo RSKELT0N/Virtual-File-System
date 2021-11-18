@@ -1,14 +1,15 @@
 #ifndef _VFS_H_
 #define _VFS_H_
 
-#include "IFS.h"
-#include "Log.h"
-#include "FAT32.h"
 #include <set>
 #include <string>
 #include <vector>
 #include <stdio.h>
 #include <unordered_map>
+
+#include "IFS.h"
+#include "Log.h"
+#include "FAT32.h"
 
 #define DEFAULT_FS (const char*)"fat32"
 

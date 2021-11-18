@@ -1,4 +1,4 @@
-#include "FAT32.h"
+#include "../include/FAT32.h"
 
 IFS::IFS() = default;
 const uint32_t FAT32::CLUSTER_SIZE;
@@ -61,7 +61,7 @@ void FAT32::set_up() noexcept {
     store_superblock();
     store_fat_table();
     store_dir(*m_root);
-    insert_ext_file(*m_root, "/Users/Ryan/Documents/FAT32/sampleEntries/text", "file.txt");
+    insert_ext_file(*m_root, "/mnt/c/Users/Ryan/Documents/tmp/file.cpp", "file.txt");
     LOG(Log::INFO, "file system has been initialised.");
     print_super_block();
     print_fat_table();
@@ -564,12 +564,12 @@ FAT32::dir_entr_ret_t* FAT32::parsePath(std::vector<std::string>&path, uint8_t s
 
     tmp_entr = find_entry(*curr_dir, path[path.size() - 1].c_str(), shd_exst);
 
-    if (tmp_entr == nullptr && shd_exst == 1) {
+    if (!tmp_entr && shd_exst == 1) {
         delete ret;
         return nullptr;
     }
 
-    if(tmp_entr != nullptr && shd_exst == 0) {
+    if(tmp_entr && shd_exst == 0) {
         delete ret;
         return nullptr;
     }
@@ -631,7 +631,7 @@ void FAT32::rm_entr_mem(dir_t & dir, const char* name) noexcept {
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
         if (strcmp(dir.dir_entries[i].dir_entry_name, name) == 0) {
             for (int j = i; j < dir.dir_header.dir_entry_amt - 1; j++) {
-                tmp[j] = dir.dir_entries[i + 1];
+                tmp[j] = dir.dir_entries[j + 1];
             }
             break;
         }
@@ -671,6 +671,7 @@ void FAT32::cp_dir(dir_t& src, dir_t& dst) noexcept {
             cp_dir(*tmp, *dir_cp);
             delete tmp;
             delete dir_cp;
+            continue;
         }
         std::string buffer = read_file(src, src.dir_entries[i].dir_entry_name);
         insert_int_file(dst, buffer.c_str(), src.dir_entries[i].dir_entry_name);
@@ -905,10 +906,10 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
     printf("Parent cluster:   %d\n", dir.dir_header.parent_cluster_index);
     printf("Entry amt:        %d\n", dir.dir_header.dir_entry_amt);
 
-    printf(" %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
+    printf("\n %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
 
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
-        printf("%db%10s%d%12s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
+        printf("%05db%8s%02d%10s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
     }
     printf("-------------------------------");
     printf("\n");

@@ -1,10 +1,11 @@
 #ifndef _FAT32_H_
 #define _FAT32_H_
 
-#include "VFS.h"
-#include "Disk.h"
 #include <string.h>
 #include <vector>
+
+#include "VFS.h"
+#include "Disk.h"
 
 #define B(__size__)               (__size__)
 #define KB(__size__)              (B(__size__) * 1024)
@@ -149,7 +150,7 @@ private:
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
     static constexpr uint32_t USER_SPACE = KB(20);
-    static constexpr uint32_t CLUSTER_SIZE = KB(1);
+    static constexpr uint32_t CLUSTER_SIZE = B(500);
     static constexpr uint32_t CLUSTER_AMT = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr size_t   STORAGE_SIZE = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;

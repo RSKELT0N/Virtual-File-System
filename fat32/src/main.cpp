@@ -1,4 +1,4 @@
-#include "terminal.h"
+#include "../include/terminal.h"
 
 int main() {
     terminal* term = new terminal();

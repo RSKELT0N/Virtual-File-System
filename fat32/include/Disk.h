@@ -1,13 +1,12 @@
 #ifndef _DISK_H_
 #define _DISK_H_
 
-#include "DiskDriver.h"
-
 #include <string>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 
+#include "DiskDriver.h"
 
 class Disk : public DiskDriver {
 
