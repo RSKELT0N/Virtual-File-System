@@ -4,14 +4,8 @@
 #include <string.h>
 #include <vector>
 
-#include "VFS.h"
 #include "Disk.h"
-
-#define B(__size__)               (__size__)
-#define KB(__size__)              (B(__size__) * 1024)
-#define MB(__size__)              (KB(__size__) * 1024)
-#define GB(__size__)              (MB(__size__) * 1024)
-#define CLUSTER_ADDR(__CLUSTER__) (KB(2) * __CLUSTER__)
+#include "IFS.h"
 
 #define min(a,b)            ((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH    (uint8_t)10
@@ -149,19 +143,19 @@ private:
     const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t USER_SPACE = KB(20);
-    static constexpr uint32_t CLUSTER_SIZE = B(500);
-    static constexpr uint32_t CLUSTER_AMT = USER_SPACE / CLUSTER_SIZE;
+    static constexpr uint32_t USER_SPACE   = CFG_USER_SPACE_SIZE;
+    static constexpr uint32_t CLUSTER_SIZE = CFG_CLUSTER_SIZE;
+    static constexpr uint32_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr size_t   STORAGE_SIZE = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
-    static constexpr uint32_t FAT_TABLE_START_ADDR = sizeof(superblock_t);
-    static constexpr uint32_t FAT_TABLE_SIZE = sizeof(uint32_t) * CLUSTER_AMT;
-    static constexpr uint32_t ROOT_START_ADDR = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
-    static constexpr uint32_t SUPERBLOCK_SIZE = sizeof(superblock_t);
+    static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
+    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
+    static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
+    static constexpr uint32_t SUPERBLOCK_SIZE       = sizeof(superblock_t);
 
 private:
-    Disk* m_disk;
+    DiskDriver* m_disk;
     superblock_t m_superblock;
     uint32_t* m_fat_table;
     dir_t* m_root;

@@ -11,7 +11,7 @@ Disk::Disk() {
 }
 
 Disk::~Disk() {
-    if(file == NULL) {
+    if(file != nullptr) {
         LOG(Log::WARNING, "FILE object has not been initialised yet!");
         exit(EXIT_FAILURE);
     }
