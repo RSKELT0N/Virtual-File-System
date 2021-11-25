@@ -7,6 +7,7 @@
 #include "Disk.h"
 #include "IFS.h"
 
+#define abs(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
 #define min(a,b)            ((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH    (uint8_t)10
 #define DIR_NAME_LENGTH     (uint8_t)10
@@ -23,7 +24,7 @@ public:
         BAD_CLUSTER         = 0x00000FF7,
         EOF_CLUSTER         = 0x00000FF8,
         ALLOCATED_CLUSTER   = 0x00000001
-    };
+    } __attribute__((packed));
 
 private:
 

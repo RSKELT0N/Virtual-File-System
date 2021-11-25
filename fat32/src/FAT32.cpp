@@ -30,14 +30,14 @@ FAT32::FAT32(const char* disk_name) {
         LOG(Log::ERROR, "maximum storage can only be 4gb");
     }
 
-    m_disk = (Disk*)new Disk();
+    m_disk = new Disk();
     init();
 }
 
 FAT32::~FAT32() {
     free(m_fat_table);
     //m_disk->rm();
-    delete m_disk;
+    delete (Disk*)m_disk;
     delete m_root;
     if (m_curr_dir != m_root)
         delete m_curr_dir;
@@ -353,7 +353,7 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
         curr_clu = m_fat_table[curr_clu];
     }
 
-    uint32_t remain_entries_in_lst_clu = abs(ret->dir_header.dir_entry_amt - entries_read);
+    uint32_t remain_entries_in_lst_clu = abs(ret->dir_header.dir_entry_amt, entries_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
     m_disk->read((void*)&ret->dir_entries[entries_read], sizeof(dir_entry_t), remain_entries_in_lst_clu);
@@ -406,7 +406,7 @@ std::string FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
         data_read += CLUSTER_SIZE;
     }
 
-    uint32_t remaining_data = abs(entry_size - data_read);
+    uint32_t remaining_data = abs(entry_size, data_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
     m_disk->read(buffer + data_read, sizeof(char), remaining_data);
@@ -468,7 +468,7 @@ int32_t FAT32::store_file(const char* data) noexcept {
         data_read += CLUSTER_SIZE;
     }
 
-    size_t remaining_data = abs(sdata - data_read);
+    size_t remaining_data = abs(sdata, data_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[amt_of_clu_needed - 1]));
     m_disk->write(data+data_read, remaining_data, 1);
@@ -683,10 +683,10 @@ void FAT32::cp_dir(dir_t& src, dir_t& dst) noexcept {
 }
 
 void FAT32::mv(std::vector<std::string>& tokens) noexcept {
-    std::vector<std::string> parts = split(tokens[1].c_str(), '/');
+    std::vector<std::string> parts = split(tokens[0].c_str(), '/');
     dir_entr_ret_t* src = parsePath(parts, 0x1);
 
-    parts = split(tokens[2].c_str(), '/');
+    parts = split(tokens[1].c_str(), '/');
     dir_entr_ret_t* dst = parsePath(parts, 0x0);
     const char* entr_name = parts[parts.size() - 1].c_str();
 
@@ -721,7 +721,7 @@ void FAT32::cp(const char* src, const char* dst) noexcept {
     dir_entr_ret_t* ddst = parsePath(parts, 0x0);
     const char* entr_name = parts[parts.size() - 1].c_str();
 
-    if(!src || !dst) {
+    if(!dsrc || !ddst) {
         LOG(Log::WARNING, "Either src or dst specified is invalid");
         return;
     }
@@ -794,7 +794,7 @@ void FAT32::cd(const char* pth) noexcept {
 }
 
 void FAT32::rm(std::vector<std::string>&tokens) noexcept {
-    for (int i = 1; i < tokens.size(); i++) {
+    for (int i = 0; i < tokens.size(); i++) {
         std::vector<std::string> parts = split(tokens[i].c_str(), '/');
         dir_entr_ret_t* entry = parsePath(parts, 0x1);
 
@@ -818,7 +818,7 @@ void FAT32::rm(std::vector<std::string>&tokens) noexcept {
 }
 
 void FAT32::touch(std::vector<std::string>& parts) noexcept {
-    for(int i = 1; i < parts.size(); i++) {
+    for(int i = 0; i < parts.size(); i++) {
         std::vector<std::string> tokens = split(parts[i].c_str(), '/');
         dir_entr_ret_t* entr = parsePath(tokens, 0x0);
         const char* init_file_name = tokens[tokens.size() - 1].c_str();

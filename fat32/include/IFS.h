@@ -5,14 +5,16 @@
 #include <string>
 
 #include "config.h"
+#include "FS.h"
 
-class IFS {
+
+class IFS : public FS {
 public:
     IFS();
     IFS(const IFS&) = delete;
     IFS(IFS&&) = delete;
 
-protected:
+public:
     virtual void cd(const char* pth) noexcept = 0;
     virtual void mkdir(const char* dir) noexcept = 0;
     virtual void rm(std::vector<std::string>& tokens) noexcept = 0;

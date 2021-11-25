@@ -6,21 +6,20 @@ DiskDriver::DiskDriver() = default;
 DiskDriver::~DiskDriver() = default;
 
 Disk::Disk() {
-    file = NULL;
-
+    file = nullptr;
 }
 
 Disk::~Disk() {
-    if(file != nullptr) {
+    if(!file) {
         LOG(Log::WARNING, "FILE object has not been initialised yet!");
         exit(EXIT_FAILURE);
     }
     fclose(file);
-    std::cout << "Deleted Disk Class\n";
+    std::cout << "Deleted Disk\n";
 }
 
 FILE* Disk::get_file() const noexcept {
-    if(file == nullptr)
+    if(!file)
         LOG(Log::WARNING, "FILE cannot be returned as it has not been initialised!");
 
     return file;
