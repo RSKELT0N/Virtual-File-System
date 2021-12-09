@@ -13,6 +13,7 @@ terminal::terminal() {
     m_extern_cmds = new std::unordered_map<std::string, valid_cmd_t>();
 
     init_valid();
+    LOG(Log::INFO, "Terminal: defined, /help for cmd list");
 }
 
 terminal::~terminal() {
@@ -25,8 +26,7 @@ terminal::~terminal() {
 void terminal::run() noexcept {
     std::string line;
 
-    printf("enter /help for cmd list\n-------------------"
-    "--\n");
+    printf("-------------------------------------------------\n");
 
     while(1) {
         if(m_env == terminal::EXTERNAL)
@@ -48,7 +48,7 @@ void terminal::input(const char* line) noexcept {
     if(if_int)
         return;
 
-    std::vector<std::string> args = split(line, SEPARATOR);
+    std::vector<std::string> args = m_vfs->split(line, SEPARATOR);
     VFS::system_cmd command = validate_cmd(args);
     terminal::cmd_environment cmd_env = cmdToEnv(command);
 
@@ -99,19 +99,6 @@ void terminal::determine_env(const char *token) noexcept {
         case hash("umnt"): set_env(EXTERNAL); break;
         default: break;
     }
-}
-
-std::vector<std::string> terminal::split(const char* line, char sep) noexcept {
-    std::vector<std::string> tokens;
-    std::stringstream ss(line);
-    std::string x;
-
-    while ((getline(ss, x, sep))) {
-        if (x != "")
-            tokens.push_back(x);
-    }
-
-    return tokens;
 }
 
 VFS::system_cmd terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
@@ -169,7 +156,7 @@ void terminal::clear_scr() const noexcept {
 }
 
 VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
-    if(parts.size() > 4)
+    if(parts.size() > 6)
         return VFS::system_cmd::invalid;
 
     if(parts.size() == 1)
@@ -181,13 +168,13 @@ VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
                 return VFS::system_cmd::invalid;
             break;
         }
-        case hash("add"): {
-            if(parts.size() < 3 || parts.size() > 4)
+        case hash("ifs"): {
+            if(parts.size() != 4 && parts.size() != 5)
                 return VFS::system_cmd::invalid;
             break;
         }
-        case hash("rm"): {
-            if(parts.size() != 3)
+        case hash("rfs"): {
+            if(parts.size() != 4 && parts.size() != 6)
                 return VFS::system_cmd::invalid;
             break;
         }
@@ -197,6 +184,11 @@ VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
             break;
         }
         case hash("umnt"): {
+            if(parts.size() != 2)
+                return VFS::system_cmd::invalid;
+            break;
+        }
+        case hash("server"): {
             if(parts.size() != 2)
                 return VFS::system_cmd::invalid;
             break;

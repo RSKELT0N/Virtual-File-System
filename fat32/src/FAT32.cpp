@@ -27,7 +27,7 @@ FAT32::FAT32(const char* disk_name) {
     FAT32::PATH_TO_DISK = cmpl.c_str();
 
     if (STORAGE_SIZE > (1ULL << 32)) {
-        LOG(Log::ERROR, "maximum storage can only be 4gb");
+        LOG(Log::ERROR_, "maximum storage can only be 4gb");
     }
 
     m_disk = new Disk();
@@ -66,7 +66,7 @@ void FAT32::set_up() noexcept {
     LOG(Log::INFO, "file system has been initialised.");
     
     print_super_block();
-#ifdef _DEBUG_
+#if _DEBUG_
     print_fat_table();
 #endif // _DEBUG_
 }
@@ -142,7 +142,7 @@ void FAT32::store_fat_table() noexcept {
 void FAT32::store_dir(dir_t & directory)  noexcept {
     // ensuring header data is able to fit within a cluster size
     if (CLUSTER_SIZE < sizeof(directory.dir_header) || CLUSTER_SIZE < sizeof(dir_entry_t)) {
-        LOG(Log::ERROR, "Insufficient memory to store header data/dir entry for directory");
+        LOG(Log::ERROR_, "Insufficient memory to store header data/dir entry for directory");
         return;
     }
 
@@ -157,7 +157,7 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
     // //////////////////////////////////////////////////////////////////////////////////////////////
     // get first cluster and store header data within
     if (!n_free_clusters(1)) {
-        LOG(Log::ERROR, "amount of clusters needed is not valid");
+        LOG(Log::ERROR_, "amount of clusters needed is not valid");
         return;
     }
 
@@ -180,7 +180,7 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
 
     // //////////////////////////////////////////////////////////////////////////////////////////////
     // write entries in first cluster index
-    for (int i = 0; i < min(directory.dir_header.dir_entry_amt, first_clu_entry_amt); i++) {
+    for (int i = 0; i < min_(directory.dir_header.dir_entry_amt, first_clu_entry_amt); i++) {
         size_t addr_offset = (ROOT_START_ADDR + (first_clu_index * CLUSTER_SIZE) + sizeof(dir_header_t));
 
         m_disk->seek(addr_offset + (i * sizeof(dir_entry_t)));
@@ -316,7 +316,7 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
     //allocate memory to ret(dir_t) entries due to dir header data.
     ret->dir_entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * ret->dir_header.dir_entry_amt);
 
-    for (int i = 0; i < min(first_clu_entry_amt, ret->dir_header.dir_entry_amt); i++) {
+    for (int i = 0; i < min_(first_clu_entry_amt, ret->dir_header.dir_entry_amt); i++) {
         size_t addr_offset = dir_start_addr + sizeof(dir_header_t);
 
         m_disk->seek(addr_offset + (i * sizeof(dir_entry_t)));
@@ -353,7 +353,7 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
         curr_clu = m_fat_table[curr_clu];
     }
 
-    uint32_t remain_entries_in_lst_clu = abs(ret->dir_header.dir_entry_amt, entries_read);
+    uint32_t remain_entries_in_lst_clu = abs_(ret->dir_header.dir_entry_amt, entries_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
     m_disk->read((void*)&ret->dir_entries[entries_read], sizeof(dir_entry_t), remain_entries_in_lst_clu);
@@ -406,7 +406,7 @@ std::string FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
         data_read += CLUSTER_SIZE;
     }
 
-    uint32_t remaining_data = abs(entry_size, data_read);
+    uint32_t remaining_data = abs_(entry_size, data_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu));
     m_disk->read(buffer + data_read, sizeof(char), remaining_data);
@@ -468,7 +468,7 @@ int32_t FAT32::store_file(const char* data) noexcept {
         data_read += CLUSTER_SIZE;
     }
 
-    size_t remaining_data = abs(sdata, data_read);
+    size_t remaining_data = abs_(sdata, data_read);
 
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[amt_of_clu_needed - 1]));
     m_disk->write(data+data_read, remaining_data, 1);
@@ -752,7 +752,7 @@ void FAT32::cp_ext(const char* src, const char* dst) noexcept {
     const char* entr_name = parts[parts.size() - 1].c_str();
 
     if(!dst) {
-        LOG(Log::WARNING, "dst specified is invalid");
+        VFS::get_vfs()->append_buffr(LOG_str(Log::WARNING, "dst specified is invalid"));
         return;
     }
 
@@ -765,7 +765,7 @@ void FAT32::mkdir(const char* dir) noexcept {
     FAT32::dir_entr_ret_t* ret = parsePath(tokens, 0x0);
 
     if (!ret) {
-        LOG(Log::WARNING, "Path specified is invalid");
+        VFS::get_vfs()->append_buffr(LOG_str(Log::WARNING, "Path specified is invalid"));
         return;
     }
     insert_dir(*ret->m_dir, tokens[tokens.size() - 1].c_str());
@@ -864,9 +864,9 @@ FAT32::dir_entry_t* FAT32::find_entry(dir_t & dir, const char* entry, uint8_t sh
     }
 
     if (shd_exst == 1 && ret == nullptr) {
-        LOG(Log::WARNING, "entry '" + std::string(entry) + "', could not be found");
+        VFS::get_vfs()->append_buffr(LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', could not be found"));
     } else if (shd_exst == 0 && ret != nullptr) {
-        LOG(Log::WARNING, "entry '" + std::string(entry) + "', already exists");
+        VFS::get_vfs()->append_buffr(LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', already exists"));
     }
 
     return ret;

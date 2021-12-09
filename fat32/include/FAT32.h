@@ -7,8 +7,8 @@
 #include "Disk.h"
 #include "IFS.h"
 
-#define abs(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
-#define min(a,b)            ((a) < (b) ? (a) : (b))
+#define abs_(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
+#define min_(a,b)            ((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH    (uint8_t)10
 #define DIR_NAME_LENGTH     (uint8_t)10
 #define UNDEF_START_CLUSTER 0
@@ -144,7 +144,7 @@ private:
     const char* PATH_TO_DISK;
     static constexpr const char* DEFAULT_DISK = "disk.dat";
 
-    static constexpr uint32_t USER_SPACE   = CFG_USER_SPACE_SIZE;
+    static constexpr uint64_t USER_SPACE   = CFG_USER_SPACE_SIZE;
     static constexpr uint32_t CLUSTER_SIZE = CFG_CLUSTER_SIZE;
     static constexpr uint32_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 

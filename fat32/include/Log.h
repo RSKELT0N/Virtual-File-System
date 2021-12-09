@@ -10,15 +10,16 @@
 #include <unordered_map>
 
 #define LOG(type, msg) (Log::getInstance()->logger(type, __LINE__, msg, ""))
+#define LOG_str(type, msg) (Log::getInstance()->logger_str(type, __LINE__, msg, ""))
 
 class Log {
 public:
-    enum Type     {
+    enum Type {
         WARNING,
         INFO,
-        MESSAGE,
+        SERVER,
         DEBUG,
-        ERROR
+        ERROR_
     };
 
 public:
@@ -27,6 +28,7 @@ public:
     Log(const Log&) = delete;
     void operator=(const Log&) = delete;
     void logger(Type, int, std::string, std::string);
+    const char* logger_str(Type, int, std::string, std::string);
 
 private:
     Log() = default;
@@ -35,9 +37,9 @@ private:
     std::unordered_map<Log::Type, std::string, std::hash<int>> typeMap = {
         {std::make_pair(Log::WARNING, "WARNING")},
         {std::make_pair(Log::INFO,    "INFO")},
-        {std::make_pair(Log::MESSAGE, "MESSAGE")},
+        {std::make_pair(Log::SERVER,  "SERVER")},
         {std::make_pair(Log::DEBUG,   "DEBUG")},
-        {std::make_pair(Log::ERROR,   "ERROR")} };
+        {std::make_pair(Log::ERROR_,   "ERROR")} };
 
     struct Colours     {
         const std::string RED     = "\033[1;31m";

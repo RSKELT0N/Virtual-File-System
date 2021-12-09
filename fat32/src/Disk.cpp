@@ -36,7 +36,7 @@ DiskDriver::ret_t Disk::open(const char *pathname, const char *mode) {
     this->file = fopen(cmpl_path_to_file.c_str(), mode);
 
     if(file == NULL)
-        LOG(Log::ERROR, "File descriptor could not be opened.");
+        LOG(Log::ERROR_, "File descriptor could not be opened.");
 
     return file == nullptr ? ERROR : VALID;
 }
@@ -54,7 +54,7 @@ DiskDriver::ret_t Disk::read(void* ptr, const size_t& size, const uint32_t& amt)
     size_t ttl_amt = fread(ptr, size, amt, file);
 
     if(ttl_amt != amt)
-        LOG(Log::ERROR, "Error reading disk at '" + std::string(std::to_string(addr)) + "'.");
+        LOG(Log::ERROR_, "Error reading disk at '" + std::string(std::to_string(addr)) + "'.");
 
     return ttl_amt == amt ? VALID : ERROR;
 }
@@ -63,7 +63,7 @@ DiskDriver::ret_t Disk::write(const void *ptr, const size_t &size, const uint32_
     size_t ttl_amt = fwrite(ptr, size, amt, file);
 
     if(ttl_amt != amt)
-        LOG(Log::ERROR, "Error writing disk at '" + std::string(std::to_string(addr)) + "'.");
+        LOG(Log::ERROR_, "Error writing disk at '" + std::string(std::to_string(addr)) + "'.");
 
     return ttl_amt == amt ? VALID : ERROR;
 }
@@ -72,7 +72,7 @@ DiskDriver::ret_t Disk::seek(const long &offset) {
     uint8_t val = fseek(file, offset, SEEK_SET);
 
     if(val == -1)
-        LOG(Log::ERROR, "Error setting offset address from 'SEEK_SET' within disk.");
+        LOG(Log::ERROR_, "Error setting offset address from 'SEEK_SET' within disk.");
 
     return val == -1 ? ERROR : VALID;
 }
@@ -81,7 +81,7 @@ DiskDriver::ret_t Disk::truncate(const off_t &size) {
     uint8_t val = ftruncate(fileno(file), size);
 
     if(val == -1)
-        LOG(Log::ERROR, "Error truncating the file");
+        LOG(Log::ERROR_, "Error truncating the file");
 
     return val == -1 ? ERROR : VALID;
 }

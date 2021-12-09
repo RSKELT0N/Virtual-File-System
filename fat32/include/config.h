@@ -6,17 +6,28 @@
 // ~~~~~~~~~~~ Config ~~~~~~~~~~
 
 /* TODO:
-    - Add a FS header, with IFS and RFS as derived from FS.
-    - Create server/client on RFS as derived classes.
     - Create protocol around transfer with client -> server.
     - return data as strings to send, towards clients.
-    - issue when moving directory to another within root folder.
+    - run server::run() on thread to accept client.
+    - define client socket for server connection, define.
+    - reformat cli structure for rfs and ifs within vfs.
 */
 
-#define _DEBUG_ 1
+#ifndef _WIN32
+#define LINUX__
+#endif
 
-#define CFG_USER_SPACE_SIZE  KB(20)
-#define CFG_CLUSTER_SIZE     KB(1)
+#define _DEBUG_ 0
+
+// IFS
+#define CFG_USER_SPACE_SIZE  KB(16)
+#define CFG_CLUSTER_SIZE     KB(2)
+
+// RFS
+#define CFG_SOCK_OPEN        (uint8_t)1
+#define CFG_SOCK_CLOSE       (uint8_t)0
+#define CFG_DEFAULT_PORT     (uint32_t)60000
+#define CFG_SOCK_LISTEN_AMT  (uint32_t)1
 
 // ~~~~~~~~~~~ end ~~~~~~~~~~~~
 

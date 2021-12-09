@@ -1,7 +1,8 @@
+
 #########################
 # variables
 #########################
-CXX      := g++ -std=gnu++11
+CXX      := g++ -std=gnu++17
 TARGET   := filesystem
 CXXFLAGS := -w -g
 DEPFLAGS := -MMD -MF $(@:.o=.d)
@@ -20,7 +21,7 @@ setup:
 	mkdir $(DISKS)
 
 $(TARGET): $(OBJ_RULE)
-	$(CXX) $(CXXFLAGS) -o $@ *.o
+	$(CXX) $(CXXFLAGS) -pthread -o $@ *.o
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
