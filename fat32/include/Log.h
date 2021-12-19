@@ -28,7 +28,7 @@ public:
     Log(const Log&) = delete;
     void operator=(const Log&) = delete;
     void logger(Type, int, std::string, std::string);
-    const char* logger_str(Type, int, std::string, std::string);
+    std::string logger_str(Type, int, std::string, std::string);
 
 private:
     Log() = default;

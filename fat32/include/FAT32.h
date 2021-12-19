@@ -148,7 +148,7 @@ private:
     static constexpr uint32_t CLUSTER_SIZE = CFG_CLUSTER_SIZE;
     static constexpr uint32_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr size_t   STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr uint32_t STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
     static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;

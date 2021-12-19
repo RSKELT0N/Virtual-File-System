@@ -15,10 +15,10 @@ class terminal {
     
 public:
     enum cmd_environment {
-        INTERNAL,
         EXTERNAL,
         REMOTE,
-        HYBRID
+        HYBRID,
+        INTERNAL
     };
 
     typedef struct {

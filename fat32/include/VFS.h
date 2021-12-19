@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unordered_map>
 
 #include "FS.h"
@@ -71,24 +72,8 @@ private:
 
 public:
     ~VFS();
-    void init_sys_cmds() noexcept;
 
-    FS* typetofs(const char* name, const char* fs_type) noexcept;
-    void control_vfs(std::vector<std::string>&) noexcept;
-    void control_ifs(std::vector<std::string>&) noexcept;
-    void control_rfs(std::vector<std::string>&) noexcept;
-    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept;
-
-public:
-    std::stringstream& get_buffr() noexcept;
-    void append_buffr(const char*) noexcept;
-
-    static VFS*& get_vfs() noexcept;
-    system_t*& get_mnted_system() noexcept;
-    std::vector<VFS::cmd_t>* get_sys_cmds() noexcept;
-    std::vector<std::string> split(const char* line, char sep) noexcept;
-
-public:
+private:
      void umnt_disk(std::vector<std::string>&);
      void mnt_disk(std::vector<std::string>&);
      void add_disk(std::vector<std::string>&);
@@ -99,6 +84,25 @@ public:
      void init_server(std::vector<std::string>&);
      void vfs_help() const noexcept;
 
+public:
+    void init_sys_cmds() noexcept;
+
+    FS* typetofs(const char* name, const char* fs_type) noexcept;
+    void control_vfs(const std::vector<std::string>&) noexcept;
+    void control_ifs(std::vector<std::string>&) noexcept;
+    void control_rfs(std::vector<std::string>&) noexcept;
+    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept;
+    void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept;
+
+public:
+    std::string& get_buffr() noexcept;
+    void append_buffr(const std::string&) noexcept;
+
+    static VFS*& get_vfs() noexcept;
+    system_t*& get_mnted_system() noexcept;
+    std::vector<VFS::cmd_t>* get_sys_cmds() noexcept;
+    static std::vector<std::string> split(const char* line, char sep) noexcept;
+
 private:
     static VFS* vfs;
     system_t* mnted_system;
@@ -107,7 +111,7 @@ private:
     std::unordered_map<std::string, system_t>* disks;
 
     RFS* server = nullptr;
-    std::stringstream buffr;
+    std::string buffr;
 };
 
 #endif //_VFS_H_

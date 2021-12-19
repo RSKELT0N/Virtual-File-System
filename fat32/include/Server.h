@@ -3,16 +3,18 @@
 
 #include "RFS.h"
 #include "Log.h"
+#include "VFS.h"
 
 #include <vector>
 #include <thread>
 #include <utility>
 
-#ifdef LINUX__
+#ifndef _WIN32
     #include <netinet/in.h>
     #include <unistd.h>
 #else
     #include <winsock2.h>
+    #include <ws2tcpip.h>
 #endif
 
 
@@ -21,6 +23,7 @@
 #define EMPH_START            (uint32_t)49152
 #define EMPH_END              (uint32_t)65535
 #define PORT_RANGE(__port__)  (__port__ < EMPH_START || __port__ >  EMPH_END) ? 1 : 0
+#define SERVER_REPONSE        (const char*)""
 
 class Server : public RFS {
 
@@ -29,7 +32,6 @@ private:
 		uint32_t m_port;
 		int m_socket_fd;
 		sockaddr_in hint;
-		socklen_t sockSize;
 		int opt = 1;
 	}conn;
 
@@ -55,27 +57,32 @@ public:
 
 private:
     void init() noexcept override;
-    void receive() noexcept override;
-    void send(const char* buffer) noexcept override;
+    void define_fd() noexcept override;
 
 public:
     void run() noexcept override;
-    void set_state(const uint8_t& state) noexcept;
+    void receive(client_t&) noexcept;
+    int handle_recv_val(int) noexcept;
+    void send(const char* buffer, client_t&) noexcept;
 
 private:
-    void define_fd()      noexcept override;
-    void set_sockopt()    noexcept;
-    void bind_sock()      noexcept;
-    void mark_listener()  noexcept;
-    void handle()         noexcept;
+    void set_sockopt() noexcept;
+    void bind_sock() noexcept;
+    void mark_listener() noexcept;
     void add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept;
 
 private:
+    void handle(client_t*) noexcept;
     std::string find_ip(const sockaddr_in& sock) const noexcept;
+
+public:
+    const char* print_logs() const noexcept;
+    void interpret_input(pcontainer_t*, client_t&) noexcept;
+    void set_state(const uint8_t& state) noexcept;
 
 private:
     std::vector<std::pair<uint32_t, client_t*>>* clients;
-
+    std::vector<const char*> logs;
 };
 
 #endif // _SERVER_H_

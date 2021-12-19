@@ -4,9 +4,9 @@
 #include <vector>
 #include <string>
 
+#include "VFS.h"
 #include "config.h"
 #include "FS.h"
-
 
 class IFS : public FS {
 public:

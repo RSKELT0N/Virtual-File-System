@@ -53,7 +53,7 @@ void Log::logger(Type type, int lineNumber, std::string log, std::string col)
         exit(EXIT_FAILURE);
 }
 
-const char* Log::logger_str(Type type, int lineNumber, std::string log, std::string col) {
+std::string Log::logger_str(Type type, int lineNumber, std::string log, std::string col) {
     std::stringstream ss;
     switch (type)
     {
@@ -80,8 +80,9 @@ const char* Log::logger_str(Type type, int lineNumber, std::string log, std::str
     ss << "[ " << col << typeMap[type] << colour.RESET << " ] ";
     ss << log;
     ss << colour.RESET;
+    ss << "\n";
 
     if(type == Type::ERROR_)
         exit(EXIT_FAILURE);
-    return ss.str().c_str();
+    return ss.str();
 }
