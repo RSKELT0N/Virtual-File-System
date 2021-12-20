@@ -18,7 +18,7 @@ protected:
     struct packet_t {
         
         uint8_t cmd : 1;
-        const char* flags;
+        std::string flags;
         uint8_t ispl : 1;
     } __attribute__((packed));
 

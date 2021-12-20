@@ -124,7 +124,7 @@ void Server::receive(client_t& client) noexcept {
     pcontainer_t* container = {};
 
     // recv info packet and store it within the container info address.
-    if((val = recv(client.sock_fd, &(container->info), sizeof(container->info), 0))) {
+    if((val = recv(client.sock_fd, &container->info, sizeof(info_t), 0))) {
         // check if recv has returned anything bar 0x1.
         if(handle_recv_val(val) != 0x1)
             return;
@@ -190,7 +190,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     //     VFS::get_vfs()->get_buffr().clear();
     // } else send(SERVER_REPONSE, client);
 
-    printf("%d %s %d\n", container->info.cmd, container->info.flags, container->info.ispl);
+    printf("%d %s %d\n", container->info.cmd, container->info.flags.c_str(), container->info.ispl);
 }
 
 std::string Server::find_ip(const sockaddr_in& sock) const noexcept {

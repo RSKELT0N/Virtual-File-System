@@ -39,7 +39,7 @@ void Client::add_hint() noexcept {
     if(res == INADDR_NONE) {
         LOG(Log::ERROR_, "Address specified is not valid");
         return;
-    } else conn.hint.sin_addr = in_addr({res});
+    } else conn.hint.sin_addr = in_addr{(in_addr_t)res};
 }
 
 void Client::connect() noexcept {
@@ -53,7 +53,7 @@ void Client::handle_send(uint8_t cmd, std::vector<std::string>& args, const char
     pcontainer_t* container = generate_container(cmd, args, payload);
 
     // sending info packet towards server, with command info related to input. Formatted ispl.
-    send((void*)&container->info, sizeof(container->info));
+    send(&container->info, sizeof(info_t));
 
     int i;
     // checking if payload flag is set
@@ -61,13 +61,13 @@ void Client::handle_send(uint8_t cmd, std::vector<std::string>& args, const char
         // looping through payloads until mf is not equal to zero.
         for(i = 0; container->payloads[i].mf == 1; i++) {
             // send payload per fragment.
-            send((void*)&container->payloads[i], sizeof(container->payloads[i]));
+            send(&container->payloads[i], sizeof(container->payloads[i]));
         }
+        // send last payload with mf whichs to zero.
+        send(&container->payloads[i], sizeof(container->payloads[i]));
     }
-
-    // send last payload with mf whichs to zero.
-    send((void*)&container->payloads[i], sizeof(container->payloads[i]));
     //packet has been sent.
+    delete container;
 }
 
 void Client::send(const void* buffer, size_t buffer_size) noexcept {
