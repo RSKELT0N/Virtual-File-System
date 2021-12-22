@@ -21,7 +21,7 @@ public:
     __attribute__((unused)) virtual void mv(std::vector<std::string>& tokens) noexcept = 0;
     __attribute__((unused)) virtual void cp(const char* src, const char* dst) noexcept = 0;
     __attribute__((unused)) virtual void cp_ext(const char* src, const char* dst) noexcept = 0;
-    __attribute__((unused)) virtual void touch(std::vector<std::string>& tokens) noexcept = 0;
+    __attribute__((unused)) virtual void touch(std::vector<std::string>& tokens, const char* buffer) noexcept = 0;
     __attribute__((unused)) virtual void cat(const char* path) noexcept = 0;
     __attribute__((unused)) virtual void ls() noexcept = 0;
 };

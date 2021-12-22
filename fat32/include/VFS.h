@@ -59,10 +59,10 @@ public:
         FS* fs = nullptr;
         const char* fs_type;
         sock_conn_t conn;
-        void (VFS::*access)(system_cmd cmd, std::vector<std::string>& args);
+        void (VFS::*access)(system_cmd cmd, std::vector<std::string>& args, const char*);
 
         ~system_t();
-        system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
+        system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&, const char*), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
     };
 
 private:
@@ -91,8 +91,8 @@ public:
     void control_vfs(const std::vector<std::string>&) noexcept;
     void control_ifs(std::vector<std::string>&) noexcept;
     void control_rfs(std::vector<std::string>&) noexcept;
-    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept;
-    void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept;
+    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept;
+    void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept;
 
 public:
     std::string& get_buffr() noexcept;

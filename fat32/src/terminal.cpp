@@ -90,10 +90,7 @@ void terminal::interpret_ext(VFS::system_cmd cmd, cmd_environment cmd_env, std::
             break;
         }
     } else if(cmd_env == EXTERNAL) {
-        switch(m_env) {
-            case terminal::REMOTE:   (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args); break;
-            case terminal::EXTERNAL: (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args); break;
-        }
+            (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args, "");
     }
 }
 
@@ -101,12 +98,13 @@ void terminal::determine_env(const char *token) noexcept {
     switch(hash(token)) {
 
         case hash("mnt"):
-            if(strcmp((*m_mnted_system)->fs_type, "rfs") == 0)
-                set_env(REMOTE);
-            else 
+            if(m_vfs->get_mnted_system() != nullptr)
                 set_env(EXTERNAL);
             break;
-        case hash("umnt"): set_env(INTERNAL); break;
+        case hash("umnt"): 
+            if(m_vfs->get_mnted_system() != nullptr)
+                set_env(INTERNAL); 
+            break;
     }
 }
 

@@ -242,13 +242,13 @@ void VFS::control_vfs(const std::vector<std::string>& parts) noexcept { // check
 }
 
 
-void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept {
+void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept {
     switch(cmd) {
         case VFS::system_cmd::mkdir: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mkdir(args[0].c_str())); break;
         case VFS::system_cmd::cd:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cd(args[0].c_str()));    break;
         case VFS::system_cmd::ls:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->ls());                   break;
         case VFS::system_cmd::rm:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->rm(args));               break;
-        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args));            break;
+        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args, buffer));            break;
         case VFS::system_cmd::mv:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mv(args));               break;
         case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));   break;
 
@@ -259,8 +259,18 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noex
     }
 }
 
-void VFS::rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args) noexcept {
-    ((Client*)(RFS*)VFS::get_vfs()->get_mnted_system()->fs)->handle_send((uint8_t)cmd, args, "");
+void VFS::rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer_) noexcept {
+    std::string buffer;
+    switch(cmd) {
+        case system_cmd::cp: {
+            switch(hash(args[0].c_str())) {
+                case hash("ext"): buffer = FS::get_ext_file_buffer(args[1].c_str());
+                break;
+            }
+        } break;
+    }
+
+    ((Client*)(RFS*)VFS::get_vfs()->get_mnted_system()->fs)->handle_send((uint8_t)cmd, args, buffer.c_str());
 }
 
 void VFS::control_ifs(std::vector<std::string>& parts) noexcept {

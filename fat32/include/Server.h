@@ -62,8 +62,8 @@ private:
 public:
     void run() noexcept override;
     void receive(client_t&) noexcept;
-    int handle_recv_val(int) noexcept;
     void send(const char* buffer, client_t&) noexcept;
+    void recv_(char* buffer, client_t&) noexcept;
 
 private:
     void set_sockopt() noexcept;

@@ -87,7 +87,7 @@ public:
     void mv(std::vector<std::string>& tokens) noexcept override;
     void cp(const char* src, const char* dst) noexcept override;
     void cp_ext(const char* src, const char* dst) noexcept override;
-    void touch(std::vector<std::string>& tokens) noexcept override;
+    void touch(std::vector<std::string>& tokens, const char* buffer) noexcept override;
     void cat(const char* path) noexcept override;
     void ls() noexcept override;
 

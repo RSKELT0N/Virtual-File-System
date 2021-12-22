@@ -24,7 +24,7 @@ void load_disks() {
 }
 
 int main(int argc, char** argv) {
-    load_disks();
+    //load_disks();
     
     terminal* term = new terminal();
     term->run();

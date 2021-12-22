@@ -51,20 +51,30 @@ void Client::connect() noexcept {
 
 void Client::handle_send(uint8_t cmd, std::vector<std::string>& args, const char* payload) noexcept {
     pcontainer_t* container = generate_container(cmd, args, payload);
+    // Serialize packet.
+    char buffer[PACKET_SIZE];
+    memset(buffer, 0, PACKET_SIZE);
+    serialize_packet(container->info, buffer);
 
     // sending info packet towards server, with command info related to input. Formatted ispl.
-    send(&container->info, sizeof(info_t));
+    send(buffer, PACKET_SIZE);
 
     int i;
     // checking if payload flag is set
     if(container->info.ispl) {
         // looping through payloads until mf is not equal to zero.
-        for(i = 0; container->payloads[i].mf == 1; i++) {
+        for(i = 0; container->payloads->at(i).mf == 1; i++) {
+            memset(buffer, 0, PACKET_SIZE);
+            // Serialize payload
+            serialize_payload(container->payloads->at(i), buffer);
             // send payload per fragment.
-            send(&container->payloads[i], sizeof(container->payloads[i]));
+            send(buffer, PACKET_SIZE);
         }
+        memset(buffer, 0, PACKET_SIZE);
+        // Serialize payload
+        serialize_payload(container->payloads->at(i), buffer);
         // send last payload with mf whichs to zero.
-        send(&container->payloads[i], sizeof(container->payloads[i]));
+        send(buffer, PACKET_SIZE);
     }
     //packet has been sent.
     delete container;
@@ -84,6 +94,7 @@ void Client::receive() noexcept {
     if((val = recv(conn.m_socket_fd, buffer, BUFFER_SIZE, 0)) == -1) {
         LOG(Log::ERROR_, "Client was unable to read incoming data from mounted server");
     } else if (val == 0) {
+        info.state = CFG_SOCK_CLOSE;
         VFS::get_vfs()->control_vfs({"umnt"});
         LOG(Log::SERVER, "Disconnected from server");
     } else if(val > 0) {

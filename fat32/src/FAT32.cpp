@@ -502,24 +502,16 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
         return;
     }
 
-    FILE* file = get_file_handlr(path);
-    fseek(file, 0, SEEK_END);
-    size_t fsize = ftell(file);
-    rewind(file);
-
-    char buffer[fsize];
-    fread(buffer, sizeof(char), fsize, file);
-
-    uint32_t start_clu = store_file(buffer);
+    std::string buffer = get_ext_file_buffer(path);
+    uint32_t start_clu = store_file(buffer.c_str());
 
     if (start_clu == -1) {
         VFS::get_vfs()->append_buffr(LOG_str(Log::WARNING, "file could not be stored"));
         return;
     }
 
-    add_new_entry(curr_dir, name, start_clu, fsize, 0);
+    add_new_entry(curr_dir, name, start_clu, buffer.size(), 0);
     save_dir(curr_dir);
-    fclose(file);
 }
 
 void FAT32::delete_entry(dir_entr_ret_t& entry) noexcept {
@@ -582,11 +574,6 @@ FAT32::dir_entr_ret_t* FAT32::parsePath(std::vector<std::string>&path, uint8_t s
     ret->m_entry = tmp_entr;
 
     return ret;
-}
-
-FILE* FAT32::get_file_handlr(const char* file) noexcept {
-    FILE* handlr = fopen(file, "r");
-    return handlr;
 }
 
 uint32_t FAT32::attain_clu() const noexcept {
@@ -817,7 +804,7 @@ void FAT32::rm(std::vector<std::string>&tokens) noexcept {
     }
 }
 
-void FAT32::touch(std::vector<std::string>& parts) noexcept {
+void FAT32::touch(std::vector<std::string>& parts, const char* buffer) noexcept {
     for(int i = 0; i < parts.size(); i++) {
         std::vector<std::string> tokens = split(parts[i].c_str(), '/');
         dir_entr_ret_t* entr = parsePath(tokens, 0x0);
@@ -829,7 +816,7 @@ void FAT32::touch(std::vector<std::string>& parts) noexcept {
             return;
         }
 
-        insert_int_file(*entr->m_dir, init_file_name, init_file_name);
+        insert_int_file(*entr->m_dir, buffer, init_file_name);
 
         delete entr;
     }
