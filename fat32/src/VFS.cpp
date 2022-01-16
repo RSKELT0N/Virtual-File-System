@@ -1,12 +1,10 @@
 #include "../include/VFS.h"
 
-//////////////////  Needed functions  //////////////////////
-
 int itoa_(int value, char *sp, int radix) {
     char tmp[16];// be careful with the length of the buffer
     char *tp = tmp;
-    int i;
-    unsigned v;
+    uint32_t i = 0;
+    unsigned v = 0;
 
     int sign = (radix == 10 && value < 0);    
     if (sign)
@@ -191,8 +189,8 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
 void VFS::init_server(std::vector<std::string>& args) {
     if(args.size() > 1) {
         if(server != nullptr && strcmp(args[1].c_str(), "logs") == 0)
-            append_buffr(((Server*)((RFS*)server))->print_logs());
-        else append_buffr("Server is not initialised\n");
+            BUFFER->append_buffer(((Server*)((RFS*)server))->print_logs());
+        else BUFFER->append_buffer("Server is not initialised\n");
         return;
     }
 
@@ -260,17 +258,7 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
 }
 
 void VFS::rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer_) noexcept {
-    std::string buffer;
-    switch(cmd) {
-        case system_cmd::cp: {
-            switch(hash(args[0].c_str())) {
-                case hash("ext"): buffer = FS::get_ext_file_buffer(args[1].c_str());
-                break;
-            }
-        } break;
-    }
-
-    ((Client*)(RFS*)VFS::get_vfs()->get_mnted_system()->fs)->handle_send((uint8_t)cmd, args, buffer.c_str());
+    ((Client*)(RFS*)VFS::get_vfs()->get_mnted_system()->fs)->handle_send(syscmd_str[(uint8_t)cmd], (uint8_t)cmd, args);
 }
 
 void VFS::control_ifs(std::vector<std::string>& parts) noexcept {
@@ -295,17 +283,23 @@ void VFS::vfs_help() const noexcept {
     printf("------  %s  ------\n", "END");
 }
 
-std::vector<std::string> VFS::split(const char* line, char sep) noexcept {
-    std::vector<std::string> tokens;
-    std::stringstream ss(line);
-    std::string x;
+void VFS::load_disks() noexcept {
+   std::string path = "disks/";
+   std::vector<std::string> func = {"ifs", "add", ""};
 
-    while ((getline(ss, x, sep))) {
-        if (x != "")
-            tokens.push_back(x);
-    }
+   struct dirent *entry;
+   DIR *dir = opendir(path.c_str());
 
-    return tokens;
+   while((entry = readdir(dir)) != NULL) {
+       if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+           continue;
+
+
+       func[2] = entry->d_name;
+       VFS::get_vfs()->control_vfs(func);
+   }
+
+	closedir(dir);
 }
 
 FS* VFS::typetofs(const char* name, const char *fs_type) noexcept {
@@ -318,12 +312,3 @@ FS* VFS::typetofs(const char* name, const char *fs_type) noexcept {
 
     return new FAT32(name);
 }
-
-std::string& VFS::get_buffr() noexcept {
-    return buffr;
-}
-
-void VFS::append_buffr(const std::string& txt) noexcept {
-    buffr += txt;
-}
-

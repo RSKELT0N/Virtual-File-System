@@ -6,7 +6,6 @@
 #include <unordered_set>
 
 #include "VFS.h"
-#include "FAT32.h"
 
 #define SEPARATOR (char)' '
 #define CLEAR_SCR (const char*)"\033c"
@@ -48,7 +47,6 @@ private:
 
     void print_help() noexcept;
     void clear_scr() const noexcept;
-    std::vector<std::string> split(const char* line, char sep) noexcept;
 
 public:
     VFS::system_cmd valid_vfs(std::vector<std::string>& parts) noexcept;

@@ -4,6 +4,18 @@
 
 #include "../include/Log.h"
 
+std::vector<std::string> split(const char* line, char sep) noexcept {
+    std::vector<std::string> tokens;
+    std::stringstream ss(line);
+    std::string x;
+
+    while ((getline(ss, x, sep))) {
+        if (x != "")
+            tokens.push_back(x);
+    }
+    return tokens;
+}
+
 Log *Log::logInstance = NULL;
 
 Log::~Log()

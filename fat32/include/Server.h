@@ -1,13 +1,12 @@
 #ifndef _SERVER_H_
 #define _SERVER_H_
 
-#include "RFS.h"
-#include "Log.h"
-#include "VFS.h"
-
 #include <vector>
 #include <thread>
 #include <utility>
+
+#include "VFS.h"
+#include "RFS.h"
 
 #ifndef _WIN32
     #include <netinet/in.h>

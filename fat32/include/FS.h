@@ -7,8 +7,8 @@
 class FS {
 
 public:
-    static FILE* get_file_handlr(const char* file_path) noexcept;
-    static std::string get_ext_file_buffer(const char* file_path) noexcept;
+    FILE* get_file_handlr(const char* file_path) noexcept;
+    std::string get_ext_file_buffer(const char* file_path) noexcept;
 };
 
 #endif // _FS_H_

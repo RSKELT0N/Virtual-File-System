@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "VFS.h"
 #include "config.h"
 #include "FS.h"
 

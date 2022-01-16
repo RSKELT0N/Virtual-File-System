@@ -17,10 +17,9 @@
     #pragma comment(lib, "ws2_32.lib")
 #endif
 
-
 class Client : public RFS {
+    
 public:
-
     struct info_t {
         uint8_t state;
     }info;
@@ -42,7 +41,8 @@ public:
 public:
     void receive() noexcept;
     void send(const void*, size_t) noexcept;
-    void handle_send(uint8_t cmd, std::vector<std::string>& args, const char* payload) noexcept;
+    const char* get_payload(const char*, std::vector<std::string>&) noexcept;
+    void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
 
 private:
     void add_hint() noexcept;
@@ -56,8 +56,6 @@ private:
 
 private:
     std::thread recv_;
-    bool have_recvd;
-     
 };
 
 #endif // _CLIENT_H_

@@ -1,6 +1,7 @@
 #include "../include/Server.h"
 
 extern int itoa_(int value, char *sp, int radix);
+extern std::vector<std::string> split(const char* line, char sep) noexcept;
 
 RFS::RFS() {}
 RFS::~RFS() {}
@@ -97,7 +98,7 @@ void Server::run() noexcept {
 
         info.users_c++;
         add_client(socket, client);
-        VFS::get_vfs()->append_buffr(LOG_str(Log::SERVER, "Client has joined").c_str());
+        BUFFER->append_buffer(LOG_str(Log::SERVER, "Client has joined"));
     }
 }
 
@@ -177,7 +178,9 @@ void Server::recv_(char* buffer, client_t& client) noexcept {
 }
 
 void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept {
-    std::vector<std::string> args = VFS::split(container->info.flags, ' ');
+    BUFFER->hold_buffer();
+
+    std::vector<std::string> args = split(container->info.flags, ' ');
     VFS::system_cmd cmd = (VFS::system_cmd)container->info.cmd;
 
     if(cmd == VFS::system_cmd::cp) {
@@ -195,9 +198,10 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     VFS* tvfs = VFS::get_vfs();
     (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
 
-    if(!tvfs->get_buffr().empty()) {
-        send(VFS::get_vfs()->get_buffr().c_str(), client);
-        VFS::get_vfs()->get_buffr().clear();
+    const char* stream = BUFFER->release_buffer();
+
+    if(*stream == '\0') {
+        send(stream, client);
     } else send(SERVER_REPONSE, client);
 
     // print_packet(container->info);

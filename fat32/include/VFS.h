@@ -6,12 +6,14 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <unordered_map>
+
+#include "config.h"
 
 #include "FS.h"
 #include "IFS.h"
 #include "RFS.h"
-#include "Log.h"
 
 #include "FAT32.h"
 #include "Server.h"
@@ -34,6 +36,8 @@ public:
         mv,
         cat
     };
+
+    static constexpr const char* syscmd_str[] = {"VFS", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
 
     struct flag_t {
          const char* name;
@@ -95,13 +99,10 @@ public:
     void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept;
 
 public:
-    std::string& get_buffr() noexcept;
-    void append_buffr(const std::string&) noexcept;
-
+    void load_disks() noexcept;
     static VFS*& get_vfs() noexcept;
     system_t*& get_mnted_system() noexcept;
     std::vector<VFS::cmd_t>* get_sys_cmds() noexcept;
-    static std::vector<std::string> split(const char* line, char sep) noexcept;
 
 private:
     static VFS* vfs;
@@ -111,7 +112,6 @@ private:
     std::unordered_map<std::string, system_t>* disks;
 
     RFS* server = nullptr;
-    std::string buffr;
 };
 
 #endif //_VFS_H_

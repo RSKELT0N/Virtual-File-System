@@ -1,20 +1,24 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+#include "Log.h"
 #include "size.h"
+#include "Buffer.h"
 
 // ~~~~~~~~~~~ Config ~~~~~~~~~~
 
 /* TODO:
-    - Create protocol around transfer with client -> server.
     - add mutex for functions that can be accessed by multiple users.
     - Ensure no buffer is overflowed, data send through socket to client/server is fragmented and attached to user buffer.
-    - Validate protocol works with small and large files, ensure that files can be sent over network, to append to file.
     - Validate that no data racing can take place and multiple users can access a mounted disk at once with mutex locks
      in place and correct buffering within the correct area.
-    - Create strcuture around data to be sent within a packet through the network for fragmentation within the server -> client. Vice versa.
+    - Stop circular include within server and client with VFS.
+    - Stop simple errors such as no clusters left, cant find external file. Copying large file.
+    - Everything that is printed will be moved to buffer and be used by: Client, Server, Terminal.
 
 */
+
+#define BUFFER Buffer::get_buffer()
 
 #define _DEBUG_ 0
 

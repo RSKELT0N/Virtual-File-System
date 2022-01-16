@@ -6,13 +6,12 @@
 #include <stdlib.h>
 #include <vector>
 
-#include "FS.h"
-#include "Log.h"
 #include "config.h"
+#include "FS.h"
 
 #define PACKET_SIZE       (size_t)1024
 #define FLAGS_BUFFER_SIZE (size_t)25
-#define PAYLOAD_SIZE      (size_t)20
+#define PAYLOAD_SIZE      (size_t)1000
 
 class RFS : public FS {
 
@@ -25,6 +24,7 @@ protected:
 
     struct payload_t {
         uint8_t mf : 1;
+        int payload_size;
         char payload[PAYLOAD_SIZE];
     } __attribute__((packed));
 

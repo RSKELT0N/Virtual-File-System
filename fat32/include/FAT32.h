@@ -4,8 +4,8 @@
 #include <string.h>
 #include <vector>
 
-#include "Disk.h"
 #include "IFS.h"
+#include "Disk.h"
 
 #define abs_(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
 #define min_(a,b)            ((a) < (b) ? (a) : (b))

@@ -14,5 +14,6 @@ std::string FS::get_ext_file_buffer(const char* path) noexcept {
     char buffer[fsize];
     fread(buffer, sizeof(char), fsize, file);
 
+    fclose(file);
     return std::string(buffer);
 }

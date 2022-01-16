@@ -5,12 +5,13 @@
 #ifndef LOG_LOG_H
 #define LOG_LOG_H
 
+#include <vector>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
 
 #define LOG(type, msg) (Log::getInstance()->logger(type, __LINE__, msg, ""))
-#define LOG_str(type, msg) (Log::getInstance()->logger_str(type, __LINE__, msg, ""))
+#define LOG_str(type, msg) (Log::getInstance()->logger_str(type, __LINE__, msg, "").c_str())
 
 class Log {
 public:

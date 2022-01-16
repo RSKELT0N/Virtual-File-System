@@ -30,15 +30,19 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
             for(int i = 0; i < amount_of_payloads - 1; i++) {
                 payload_t tmp;
                 tmp.mf = 0x1;
+                tmp.payload_size = PAYLOAD_SIZE;
                 memcpy(tmp.payload, &(payload[data_read]), PAYLOAD_SIZE);
                 con->payloads->push_back(tmp);
 
                 data_read += PAYLOAD_SIZE;
             }
 
+            size_t remaining_data = load_size - data_read;
+
             payload_t final;
             final.mf = 0x0;
-            memcpy(final.payload, &(payload[data_read]), load_size - data_read);
+            final.payload_size = remaining_data;
+            memcpy(final.payload, &(payload[data_read]), remaining_data);
             con->payloads->push_back(final);
 
             data_read += load_size - data_read;
@@ -48,9 +52,10 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
 std::string RFS::retain_payloads(std::vector<payload_t>& pylds) noexcept {
     std::string payloads = {};
-
-    for(int i = 0; i < pylds.size(); i++)
-        for(int j = 0; j < PAYLOAD_SIZE; j++)
+    
+    int i;
+    for(i = 0; i < pylds.size(); i++)
+        for(int j = 0; j < pylds[i].payload_size; j++)
             payloads += pylds[i].payload[j];
     
     return payloads;
@@ -96,8 +101,11 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     // Store mf int.
     uint8_t* int_p = (uint8_t*)buffer;
     *int_p = pyld.mf; int_p++;
+    // Store payload size.
+    int* int_size_p = (int*)int_p;
+    *int_size_p = pyld.payload_size; int_size_p++;
     //Store payload.
-    char* char_p = (char*)int_p;
+    char* char_p = (char*)int_size_p;
     int pylad_c = 0;
 
     while(pylad_c < PAYLOAD_SIZE) {
@@ -111,8 +119,11 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     // Store mf into struct.
     uint8_t* int_p = (uint8_t*)buffer;
     pyld.mf = *int_p; int_p++;
+    // Store playload size into struct.
+    int* int_size_p = (int*)int_p;
+    pyld.payload_size = *int_size_p; int_size_p++;
     //Store payload into struct.
-    char* char_p = (char*)int_p;
+    char* char_p = (char*)int_size_p;
     int pylad_c = 0;
 
     while(pylad_c < PAYLOAD_SIZE) {
@@ -127,7 +138,7 @@ void RFS::print_packet(const packet_t& pckt) const noexcept {
 }
 
 void RFS::print_payload(const payload_t& pyld) const noexcept {
-    printf("\n---- PAYLOAD ----\n -> mf : [%d]\n -> payload : [", pyld.mf);
+    printf("\n---- PAYLOAD ----\n -> mf : [%d]\n -> size : [%d]\n -> payload : [", pyld.mf, pyld.payload_size);
 
     for(int i = 0; i < PAYLOAD_SIZE; i++) {
         printf("%c", pyld.payload[i]);

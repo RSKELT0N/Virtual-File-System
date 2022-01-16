@@ -1,12 +1,15 @@
 #include "../include/terminal.h"
 
-VFS* terminal::m_vfs;
+extern std::vector<std::string> split(const char* line, char sep) noexcept;
 
 constexpr unsigned int hash(const char *s, int off = 0) {
     return !s[off] ? 5381 : (hash(s, off+1)*33) ^ s[off];
 }
 
+VFS* terminal::m_vfs;
+
 terminal::terminal() {
+    BUFFER->hold_buffer();
     m_vfs = VFS::get_vfs();
     m_mnted_system = &(*m_vfs).get_mnted_system();
     m_extern_cmds = new std::unordered_map<std::string, valid_cmd_t>();
@@ -14,25 +17,24 @@ terminal::terminal() {
     m_env = terminal::INTERNAL;
 
     init_valid();
-    LOG(Log::INFO, "Terminal: defined, /help for cmd list");
+    BUFFER->append_buffer(LOG_str(Log::INFO, "Terminal: defined, /help for cmd list"));
 }
 
 terminal::~terminal() {
-    LOG(Log::INFO, "Exiting VFS..");
+    BUFFER->append_buffer(LOG_str(Log::INFO, "Exiting VFS.."));
     delete m_extern_cmds;
-    std::cout << "Deleted terminal\n";
+    BUFFER->append_buffer(("Deleted terminal\n"));
     m_vfs->~VFS();
 }
 
 void terminal::run() noexcept {
     std::string line;
 
-    printf("-------------------------------------------------\n");
-
+    BUFFER->append_buffer(("-------------------------------------------------\n"));
 
     while(1) {
-        printf("%s", m_vfs->get_buffr().c_str());
-        m_vfs->get_buffr().clear();
+        const char* str = BUFFER->release_buffer();
+        printf("%s", str);
 
         if(m_env == terminal::EXTERNAL)
             printf("%s", "-> ");
@@ -40,8 +42,10 @@ void terminal::run() noexcept {
 
         std::getline(std::cin, line);
 
-        if(!line.empty())
+        if(!line.empty()) {
+            BUFFER->hold_buffer();
             input(line.c_str());
+        }
     }
 }
 
@@ -51,12 +55,12 @@ void terminal::input(const char* line) noexcept {
     if(if_int)
         return;
 
-    std::vector<std::string> args = m_vfs->split(line, SEPARATOR);
+    std::vector<std::string> args = split(line, SEPARATOR);
     VFS::system_cmd command = validate_cmd(args);
     terminal::cmd_environment cmd_env = cmdToEnv(command);
 
     if(cmd_env != m_env && cmd_env != terminal::HYBRID && m_env != terminal::REMOTE) {
-        LOG(Log::WARNING, "Command is used within the wrong context");
+        BUFFER->append_buffer(LOG_str(Log::WARNING, "Command is used within the wrong context"));
         return;
     }
 
@@ -79,7 +83,7 @@ uint8_t terminal::interpret_int(std::string line) noexcept {
 void terminal::interpret_ext(VFS::system_cmd cmd, cmd_environment cmd_env, std::vector<std::string>& args) noexcept {
 
     if(cmd == VFS::system_cmd::invalid) {
-        printf("command is invalid\n");
+        BUFFER->append_buffer("command is invalid\n");
         return;
     }
 
@@ -121,11 +125,11 @@ void terminal::set_env(cmd_environment env) noexcept {
 }
 
 void terminal::print_help() noexcept {
-    printf("---------  %s  ---------\n", "Help");
+    BUFFER->append_buffer(("---------  %s  ---------\n", "Help"));
     for(auto i = m_vfs->get_sys_cmds()->begin(); i != m_vfs->get_sys_cmds()->end(); i++) {
         printf(" -> %s\n", i->desc);
     }
-    printf("---------  %s  ---------\n", "End");
+    BUFFER->append_buffer(("---------  %s  ---------\n", "End"));
 }
 
 
