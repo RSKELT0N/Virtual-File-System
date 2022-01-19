@@ -15,10 +15,9 @@
     - Stop circular include within server and client with VFS.
     - Stop simple errors such as no clusters left, cant find external file. Copying large file.
     - Everything that is printed will be moved to buffer and be used by: Client, Server, Terminal.
-
 */
 
-#define BUFFER Buffer::get_buffer()
+#define BUFFER (*Buffer::get_buffer())
 
 #define _DEBUG_ 0
 

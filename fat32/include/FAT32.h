@@ -36,7 +36,6 @@ private:
         uint32_t user_size;
         uint32_t cluster_size;
         uint32_t cluster_n;
-
     } __attribute__((packed));
 
     typedef struct __attribute__((packed)) {

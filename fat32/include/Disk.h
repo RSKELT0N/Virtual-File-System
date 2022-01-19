@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#include "config.h"
 #include "DiskDriver.h"
 
 class Disk : public DiskDriver {

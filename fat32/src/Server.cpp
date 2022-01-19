@@ -1,6 +1,6 @@
 #include "../include/Server.h"
 
-extern int itoa_(int value, char *sp, int radix);
+extern int itoa_(int value, char *sp, int radix, int amt);
 extern std::vector<std::string> split(const char* line, char sep) noexcept;
 
 RFS::RFS() {}
@@ -24,11 +24,11 @@ Server::~Server() {
 
     close(conn.m_socket_fd);
     delete clients;
-    LOG(Log::INFO, "Socket has been closed off for conntection");
+    BUFFER << LOG_str(Log::INFO, "Socket has been closed off for conntection");
 }
 
 void Server::init() noexcept {
-    printf("\n%s\n", "-------  Server  ------");
+    BUFFER << "\n-------  Server  ------\n";
     define_fd();
     set_sockopt();
     bind_sock();
@@ -36,16 +36,16 @@ void Server::init() noexcept {
 
     char str[10];
     sprintf(str, "%d", conn.m_port);
-    LOG(Log::SERVER, "Server has been initialised: [Port : " + std::string(str) + "]");
-    printf("%s\n", "---------  End  -------");
+    BUFFER << LOG_str(Log::SERVER, "Server has been initialised: [Port : " + std::string(str) + "]");
+    BUFFER << "---------  End  -------\n";
     std::thread run_(&Server::run, this);
     run_.detach();
 }
 
 void Server::define_fd() noexcept {
     if((conn.m_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        LOG(Log::ERROR_, "Socket couldnt be created");
-    } else LOG(Log::SERVER, "Socket[Socket Stream] has been created");
+        BUFFER << LOG_str(Log::ERROR_, "Socket couldnt be created");
+    } else BUFFER << LOG_str(Log::SERVER, "Socket[Socket Stream] has been created");
 }
 
 void Server::set_sockopt() noexcept {
@@ -55,12 +55,12 @@ void Server::set_sockopt() noexcept {
         setsockopt(conn.m_socket_fd, SOL_SOCKET, SO_REUSEADDR, &conn.opt, sizeof(conn.opt));
     #else
         char int_str[1];
-        setsockopt(conn.m_socket_fd, SOL_SOCKET, SO_REUSEADDR, ((const char*)itoa_(conn.opt, int_str, 10)), sizeof(conn.opt));
+        setsockopt(conn.m_socket_fd, SOL_SOCKET, SO_REUSEADDR, ((const char*)itoa_(conn.opt, int_str, 10, 1)), sizeof(conn.opt));
     #endif
 
     if(res == -1) {
-        LOG(Log::ERROR_, "Issue setting the Socket level to: SOL_SOCKET");
-    } else LOG(Log::SERVER, "Socket level has been set towards: SOL_SOCKET");
+        BUFFER << LOG_str(Log::ERROR_, "Issue setting the Socket level to: SOL_SOCKET");
+    } else BUFFER << LOG_str(Log::SERVER, "Socket level has been set towards: SOL_SOCKET");
 }
 
 void Server::bind_sock() noexcept {
@@ -69,14 +69,14 @@ void Server::bind_sock() noexcept {
     conn.hint.sin_port        = htons(conn.m_port);
 
     if(bind(conn.m_socket_fd, (sockaddr*)&conn.hint, sizeof(conn.hint)) ==  -1) {
-        LOG(Log::ERROR_, "Issue bindbing socket to hint structure");
-    } else LOG(Log::SERVER, "Socket has been bound to hint structure");
+        BUFFER << LOG_str(Log::ERROR_, "Issue bindbing socket to hint structure");
+    } else BUFFER << LOG_str(Log::SERVER, "Socket has been bound to hint structure");
 }
 
 void Server::mark_listener() noexcept {
     if(listen(conn.m_socket_fd, CFG_SOCK_LISTEN_AMT) == -1) {
-        LOG(Log::ERROR_, "Socket failed to set listener");
-    } else LOG(Log::SERVER, "Socket is set for listening");
+        BUFFER << LOG_str(Log::ERROR_, "Socket failed to set listener");
+    } else BUFFER << LOG_str(Log::SERVER, "Socket is set for listening");
 }
 
 void Server::run() noexcept {
@@ -86,19 +86,19 @@ void Server::run() noexcept {
 
     while(info.state == CFG_SOCK_OPEN) {
         if((socket = accept(conn.m_socket_fd,(sockaddr *)&client,&clientSize)) == -1) {
-            LOG(Log::WARNING, "Client socket has failed to join");
+            BUFFER << LOG_str(Log::WARNING, "Client socket has failed to join");
             continue;
         }
 
         if(info.users_c == info.max_usr_c) {
-            LOG(Log::WARNING, "Client: [" + find_ip(client) + "] has tried to join, Server is full");
+            BUFFER << LOG_str(Log::WARNING, "Client: [" + find_ip(client) + "] has tried to join, Server is full");
             close(socket);
             continue;
         }
 
         info.users_c++;
         add_client(socket, client);
-        BUFFER->append_buffer(LOG_str(Log::SERVER, "Client has joined"));
+        BUFFER << LOG_str(Log::SERVER, "Client has joined");
     }
 }
 
@@ -162,7 +162,7 @@ void Server::receive(client_t& client) noexcept {
 
 void Server::send(const char* buffer, client_t& client) noexcept {
     if(::send(client.sock_fd, buffer, BUFFER_SIZE, 1) == -1) {
-        LOG(Log::ERROR_, "Issue sending information back towards client");
+        BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
     }
 }
 
@@ -170,7 +170,7 @@ void Server::recv_(char* buffer, client_t& client) noexcept {
     int val = 0;
     val = recv(client.sock_fd, buffer, PACKET_SIZE, 0);
     if(val == -1) {
-        LOG(Log::ERROR_, "Issue receiving data from client");
+        BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
     } else if(val == 0) {
         info.users_c--;
         info.state = CFG_SOCK_CLOSE;
@@ -178,7 +178,7 @@ void Server::recv_(char* buffer, client_t& client) noexcept {
 }
 
 void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept {
-    BUFFER->hold_buffer();
+    BUFFER.hold_buffer();
 
     std::vector<std::string> args = split(container->info.flags, ' ');
     VFS::system_cmd cmd = (VFS::system_cmd)container->info.cmd;
@@ -198,11 +198,13 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     VFS* tvfs = VFS::get_vfs();
     (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
 
-    const char* stream = BUFFER->release_buffer();
+    const char* stream = BUFFER.retain_buffer();
 
-    if(*stream == '\0') {
+    if(*stream != '\0') {
         send(stream, client);
     } else send(SERVER_REPONSE, client);
+
+    BUFFER.release_buffer();
 
     // print_packet(container->info);
     // for(int i = 0; i < container->payloads->size(); i++) {
@@ -224,10 +226,10 @@ std::string Server::find_ip(const sockaddr_in& sock) const noexcept {
 const char* Server::print_logs() const noexcept {
     char tmp[1024];
 
-    sprintf(tmp, "\n---- LOGS ----\n");
+    BUFFER << "\n---- LOGS ----\n";
     for(int i = 0; i < logs.size(); i++) {
-        sprintf(tmp + strlen(tmp), "[%d] -> %s\n", i, logs[i]);
+        BUFFER << "[" << i << "] -> " << logs[i] << "\n";
     }
-    sprintf(tmp + strlen(tmp), "--------------\n");
+    BUFFER << "--------------\n";
     return tmp;
 }

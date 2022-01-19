@@ -1,16 +1,31 @@
 #include "../include/Buffer.h"
 
+int countDigit(int n)
+{
+    int count = 0;
+    while (n != 0)
+    {
+        n = n / 10;
+        ++count;
+    }
+    return count;
+}
+
+extern int itoa_(int value, char *sp, int radix, int amt);
+
 Buffer* Buffer::mBuf_p;
 
 Buffer::Buffer() {
-    this->mStream = new std::string();
     this->mLock = new std::mutex();
 }
 
 Buffer::~Buffer() {
     delete mBuf_p;
     delete mLock;
-    delete mStream;
+}
+
+Buffer::Buffer(const Buffer&) {
+
 }
 
 Buffer* Buffer::get_buffer() noexcept {
@@ -20,17 +35,34 @@ Buffer* Buffer::get_buffer() noexcept {
     return mBuf_p;
 }
 
-void Buffer::hold_buffer() const noexcept {
+void Buffer::hold_buffer() noexcept {
     mLock->lock();
 }
 
-const char* Buffer::release_buffer() noexcept {
+void Buffer::release_buffer() noexcept {
     mLock->unlock();
-    std::string ret = mStream->c_str();
-    mStream->clear();
-    return ret.c_str();
+    mStream.clear();
 }
 
-void Buffer::append_buffer(const char* str) noexcept {
-    *mStream += std::string(str);
+const char* Buffer::retain_buffer() noexcept {
+    return mStream.c_str();
+}
+
+Buffer& Buffer::operator<<(const char* str) noexcept {
+    mStream += str;
+
+    const char* tmp = mStream.c_str();
+
+    return *(this);
+}
+
+Buffer& Buffer::operator<<(int val) noexcept {
+    int amt = countDigit(val);
+    char buffer[amt];
+
+    itoa_(val, buffer, 10, amt);
+    buffer[amt] = '\0';
+    mStream += buffer;
+
+    return (*this);
 }

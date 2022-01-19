@@ -1,7 +1,7 @@
 #include "../include/VFS.h"
 
-int itoa_(int value, char *sp, int radix) {
-    char tmp[16];// be careful with the length of the buffer
+int itoa_(int value, char *sp, int radix, int amt) {
+    char tmp[amt];// be careful with the length of the buffer
     char *tp = tmp;
     uint32_t i = 0;
     unsigned v = 0;
@@ -53,11 +53,12 @@ VFS* VFS::vfs;
 
 VFS::VFS() {
     mnted_system = static_cast<system_t*>(malloc(sizeof(system_t)));
+    mnted_system->name = "";
     disks        = new std::unordered_map<std::string, system_t>();
     sys_cmds     = new std::vector<VFS::cmd_t>();
 
     init_sys_cmds();
-    LOG(Log::INFO, "VFS: defined");
+    BUFFER << LOG_str(Log::INFO, "VFS: defined");
 }
 
 VFS::~VFS() {
@@ -89,22 +90,23 @@ void VFS::umnt_disk(std::vector<std::string> &parts) {
         mnted_system->fs = nullptr;
         mnted_system->fs_type = "";
         mnted_system->name    = "";
-    } else LOG(Log::WARNING, "There is no system currently mounted");
+    } else BUFFER << LOG_str(Log::WARNING, "There is no system currently mounted");
 }
 
 void VFS::mnt_disk(std::vector<std::string>& parts) {
     if(disks->find(parts[1]) == disks->end()) {
-        LOG(Log::WARNING, "Disk does not exist within the VFS");
+        BUFFER << LOG_str(Log::WARNING, "Disk does not exist within the VFS");
+
         return;
     }
 
     if(mnted_system->fs != nullptr) {
-        LOG(Log::WARNING, "Unmount the current system before mounting another");
+        BUFFER << LOG_str(Log::WARNING, "Unmount the current system before mounting another");
         return;
     }
 
     printf("%s  %s  %s", "\n--------------------", parts[1].c_str(), "--------------------\n");
-    LOG(Log::INFO, "Mounting '" + parts[1] + "' as primary FS on the vfs");
+    BUFFER << LOG_str(Log::INFO, "Mounting '" + parts[1] + "' as primary FS on the vfs");
 
     disks->find(parts[1])->second.fs = typetofs(parts[1].c_str(), disks->find(parts[1])->second.fs_type);
 
@@ -119,13 +121,13 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
 
 void VFS::add_disk(std::vector<std::string>& parts) {
     if(disks->find(parts[2]) != disks->end()) {
-        LOG(Log::WARNING, " There is an existing disk with that name already");
+        BUFFER << LOG_str(Log::WARNING, " There is an existing disk with that name already");
         return;
     }
 
     if(parts.size() == 4) { // added a fourth parameter to specify file system type
         if(fs_types.find(parts[3].c_str()) == fs_types.end()) {
-            LOG(Log::WARNING, "File system type does not exist");
+            BUFFER << LOG_str(Log::WARNING, "File system type does not exist");
             return;
         } else (*disks).insert(std::make_pair(parts[2], system_t{parts[2].c_str(), nullptr, parts[3].c_str(), nullptr, {}})); // default fs
     } else (*disks).insert(std::make_pair(parts[2], system_t{parts[2].c_str(), nullptr, DEFAULT_FS, nullptr, {}})); // specified fs
@@ -142,7 +144,7 @@ void VFS::rm_disk(std::vector<std::string>& parts) {
 
 void VFS::add_remote(std::vector<std::string>& parts) {
     if(disks->find(parts[2]) != disks->end()) {
-        LOG(Log::WARNING, "There is an existing remote connection with that name already");
+        BUFFER << LOG_str(Log::WARNING, "There is an existing remote connection with that name already");
         return;
     }
 
@@ -158,39 +160,39 @@ void VFS::rm_remote(std::vector<std::string>& parts) {
 }
 
 void VFS::lst_disks(std::vector<std::string>& parts) {
-    printf("\n");
+    BUFFER << "\n";
+    BUFFER << "-----------------  VFS  ---------------\n";
     if(disks->empty()) {
-        printf("-----------------  %s  ---------------\n", "VFS");
-        printf(" %s", "-> there is no systems added\n");
+        BUFFER << " -> there is no systems added\n";
         goto no_disks;
     }
 
-    printf("--------------  %s  --------------\n", "Systems");
     for(auto i = disks->begin(); i != disks->end(); i++) {
         if(i->second.fs_type == "rfs") {
-            printf(" -> (name)%s : (address)%s, (port)%d", i->first.c_str(), i->second.conn.addr, i->second.conn.port);
+            BUFFER << " -> (name)" << i->first.c_str() << " : (address)" << i->second.conn.addr << ", (port)" << i->second.conn.port;
             goto mount;
         }
-        printf(" -> (name)%s : (filesystem)%s", i->first.c_str(), i->second.fs_type);
+        BUFFER << " -> (name)" << i->first.c_str() << " : (filesystem)" << i->second.fs_type;
 
         mount:
         if(strcmp(mnted_system->name, i->first.c_str()) == 0)
-            printf(" %s", "[ Mounted ]");
-        printf("\n");
+            BUFFER << " %s", "[ Mounted ]";
+
+        BUFFER << "\n";
     }
     
-    printf("----------------  %s  ----------------\n\n", "END");
+    BUFFER << "----------------  END  ----------------\n\n";
     return;
     
     no_disks:
-    printf("---------------------------------------\n");
+    BUFFER << "---------------------------------------\n";
 }
 
 void VFS::init_server(std::vector<std::string>& args) {
     if(args.size() > 1) {
         if(server != nullptr && strcmp(args[1].c_str(), "logs") == 0)
-            BUFFER->append_buffer(((Server*)((RFS*)server))->print_logs());
-        else BUFFER->append_buffer("Server is not initialised\n");
+            BUFFER << (((Server*)((RFS*)server))->print_logs());
+        else BUFFER << "Server is not initialised\n";
         return;
     }
 
@@ -276,11 +278,11 @@ void VFS::control_rfs(std::vector<std::string>& parts) noexcept {
 }
 
 void VFS::vfs_help() const noexcept {
-    printf("------  %s  ------\n", "VFS help");
+    BUFFER << "------  VFS HELP  ------\n";
     for(int i = 0; i < sys_cmds->at(0).flags.size(); i++) {
-        printf(" -> %s - %s\n", sys_cmds->at(0).flags.at(i).name, sys_cmds->at(0).flags.at(i).desc);
+        BUFFER << " -> " << sys_cmds->at(0).flags.at(i).name << "-" << sys_cmds->at(0).flags.at(i).desc << "\n";
     }
-    printf("------  %s  ------\n", "END");
+    BUFFER << "------  END  ------\n";
 }
 
 void VFS::load_disks() noexcept {

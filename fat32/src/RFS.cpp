@@ -12,7 +12,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
         con->info.cmd = cmd;
         memcpy(con->info.flags, flags.c_str(), FLAGS_BUFFER_SIZE);
-
+        
         size_t load_size = strlen(payload);
 
         if(load_size == 0)
@@ -134,14 +134,14 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
 }
 
 void RFS::print_packet(const packet_t& pckt) const noexcept {
-    printf("\n---- INFO ----\n -> cmd   : [%d]\n -> flags : [%s]\n -> ispl  : [%d]\n--------------\n", pckt.cmd, pckt.flags, pckt.ispl);
+    BUFFER << "\n---- INFO ----\n -> cmd   : [" << pckt.cmd << "]\n -> flags : [" << pckt.flags << "]\n -> ispl  : [" << pckt.ispl << "]\n--------------\n";
 }
 
 void RFS::print_payload(const payload_t& pyld) const noexcept {
-    printf("\n---- PAYLOAD ----\n -> mf : [%d]\n -> size : [%d]\n -> payload : [", pyld.mf, pyld.payload_size);
+    BUFFER << "\n---- PAYLOAD ----\n -> mf : [" << pyld.mf << "]\n -> size : [" << pyld.payload_size << "]\n -> payload : [";
 
     for(int i = 0; i < PAYLOAD_SIZE; i++) {
-        printf("%c", pyld.payload[i]);
+        BUFFER << pyld.payload[i];
     }
-    printf("]\n-----------------\n");
+    BUFFER << "]\n-----------------\n";
 }

@@ -15,7 +15,7 @@ FAT32::FAT32(const char* disk_name) {
     FAT32::PATH_TO_DISK = cmpl.c_str();
 
     if (STORAGE_SIZE > (1ULL << 32)) {
-        BUFFER->append_buffer(LOG_str(Log::ERROR_, "maximum storage can only be 4gb"));
+        BUFFER << (LOG_str(Log::ERROR_, "maximum storage can only be 4gb"));
     }
 
     m_disk = new Disk();
@@ -29,7 +29,7 @@ FAT32::~FAT32() {
     delete m_root;
     if (m_curr_dir != m_root)
         delete m_curr_dir;
-    std::cout << "Deleted FS\n";
+    BUFFER << "Deleted FS\n";
 }
 
 void FAT32::init() noexcept {
@@ -51,7 +51,7 @@ void FAT32::set_up() noexcept {
     store_fat_table();
     store_dir(*m_root);
     
-    BUFFER->append_buffer(LOG_str(Log::INFO, "file system has been initialised."));
+    BUFFER << (LOG_str(Log::INFO, "file system has been initialised."));
     
     print_super_block();
 #if _DEBUG_
@@ -67,7 +67,7 @@ void FAT32::create_disk() noexcept {
     m_disk->close();
 
     m_disk->open(DISK_NAME, "rb+");
-    LOG(Log::INFO, "binary file '" + std::string(DISK_NAME) + "' has been created.");
+    BUFFER << LOG_str(Log::INFO, "binary file '" + std::string(DISK_NAME) + "' has been created.");
 }
 
 void FAT32::define_superblock() noexcept {
@@ -130,7 +130,7 @@ void FAT32::store_fat_table() noexcept {
 void FAT32::store_dir(dir_t & directory)  noexcept {
     // ensuring header data is able to fit within a cluster size
     if (CLUSTER_SIZE < sizeof(directory.dir_header) || CLUSTER_SIZE < sizeof(dir_entry_t)) {
-        BUFFER->append_buffer(LOG_str(Log::ERROR_, "Insufficient memory to store header data/dir entry for directory"));
+        BUFFER << (LOG_str(Log::ERROR_, "Insufficient memory to store header data/dir entry for directory"));
         return;
     }
 
@@ -145,7 +145,7 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
     // //////////////////////////////////////////////////////////////////////////////////////////////
     // get first cluster and store header data within
     if (!n_free_clusters(1)) {
-        BUFFER->append_buffer(LOG_str(Log::ERROR_, "amount of clusters needed is not valid"));
+        BUFFER << (LOG_str(Log::ERROR_, "amount of clusters needed is not valid"));
         return;
     }
 
@@ -191,8 +191,8 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
     }
 
     if (!n_free_clusters(num_of_clu_needed)) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "remaining entries cannot be stored due to insufficient cluster amount"));
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "'" + std::string(directory.dir_header.dir_name) + "' directory cannot be stored within: '" + std::string(DISK_NAME) + "'"));
+        BUFFER << (LOG_str(Log::WARNING, "remaining entries cannot be stored due to insufficient cluster amount"));
+        BUFFER << (LOG_str(Log::WARNING, "'" + std::string(directory.dir_header.dir_name) + "' directory cannot be stored within: '" + std::string(DISK_NAME) + "'"));
         m_fat_table[first_clu_index] = UNALLOCATED_CLUSTER;
         return;
     }
@@ -244,14 +244,14 @@ void FAT32::save_dir(dir_t &directory) noexcept {
 }
 
 void FAT32::load() noexcept {
-    BUFFER->append_buffer(LOG_str(Log::INFO, "Loading disk into memory..."));
+    BUFFER << (LOG_str(Log::INFO, "Loading disk into memory..."));
     m_disk->open(DISK_NAME, "rb+");
     load_superblock();
     define_fat_table();
     load_fat_table();
     m_root = read_dir(0);
     m_curr_dir = m_root;
-    BUFFER->append_buffer(LOG_str(Log::INFO, "Disk '" + std::string(DISK_NAME) + "' has been loaded"));
+    BUFFER << (LOG_str(Log::INFO, "Disk '" + std::string(DISK_NAME) + "' has been loaded"));
     print_super_block();
     print_fat_table();
 }
@@ -283,7 +283,7 @@ uint32_t FAT32::insert_dir(dir_t & curr_dir, const char* dir_name) noexcept {
 
 FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
     if (m_fat_table[start_clu] == UNALLOCATED_CLUSTER) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "specified cluster has not been allocated"));
+        BUFFER << (LOG_str(Log::WARNING, "specified cluster has not been allocated"));
         return nullptr;
     }
 
@@ -354,7 +354,7 @@ std::string FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
     dir_entry_t* entry_ptr = find_entry(dir, entry_name, 1);
 
     if (m_fat_table[entry_ptr->start_cluster_index] == UNALLOCATED_CLUSTER) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "cluster specified has not been allocated, file could not be read"));
+        BUFFER << (LOG_str(Log::WARNING, "cluster specified has not been allocated, file could not be read"));
         return "";
     }
 
@@ -434,7 +434,7 @@ int32_t FAT32::store_file(const char* data) noexcept {
     }
 
     if (!n_free_clusters(amt_of_clu_needed)) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "amount of cluster needed isn't available to store file"));
+        BUFFER << (LOG_str(Log::WARNING, "amount of cluster needed isn't available to store file"));
         return -1;
     }
 
@@ -476,7 +476,7 @@ void FAT32::insert_int_file(dir_t& dir, const char* buffer, const char* name) no
     uint32_t start_clu = store_file(buffer);
 
     if (start_clu == -1) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "file could not be stored"));
+        BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));
         return;
     }
 
@@ -486,7 +486,7 @@ void FAT32::insert_int_file(dir_t& dir, const char* buffer, const char* name) no
 
 void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name) noexcept {
     if (access(path, F_OK) == -1) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "file specified does not exist"));
+        BUFFER << (LOG_str(Log::WARNING, "file specified does not exist"));
         return;
     }
 
@@ -494,7 +494,7 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
     uint32_t start_clu = store_file(buffer.c_str());
 
     if (start_clu == -1) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "file could not be stored"));
+        BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));
         return;
     }
 
@@ -666,7 +666,7 @@ void FAT32::mv(std::vector<std::string>& tokens) noexcept {
     const char* entr_name = parts[parts.size() - 1].c_str();
 
     if(!src || !dst) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "Either src or dst specified is invalid"));
+        BUFFER << (LOG_str(Log::WARNING, "Either src or dst specified is invalid"));
         return;
     }
 
@@ -697,7 +697,7 @@ void FAT32::cp(const char* src, const char* dst) noexcept {
     const char* entr_name = parts[parts.size() - 1].c_str();
 
     if(!dsrc || !ddst) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "Either src or dst specified is invalid"));
+        BUFFER << (LOG_str(Log::WARNING, "Either src or dst specified is invalid"));
         return;
     }
 
@@ -727,7 +727,7 @@ void FAT32::cp_ext(const char* src, const char* dst) noexcept {
     const char* entr_name = parts[parts.size() - 1].c_str();
 
     if(!dst) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "dst specified is invalid"));
+        BUFFER << (LOG_str(Log::WARNING, "dst specified is invalid"));
         return;
     }
 
@@ -740,7 +740,7 @@ void FAT32::mkdir(const char* dir) noexcept {
     FAT32::dir_entr_ret_t* ret = parsePath(tokens, 0x0);
 
     if (!ret) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "Path specified is invalid"));
+        BUFFER << (LOG_str(Log::WARNING, "Path specified is invalid"));
         return;
     }
     insert_dir(*ret->m_dir, tokens[tokens.size() - 1].c_str());
@@ -752,12 +752,12 @@ void FAT32::cd(const char* pth) noexcept {
     FAT32::dir_entr_ret_t* ret = parsePath(tokens, 0x1);
 
     if (!ret) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "entry does not exist"));
+        BUFFER << (LOG_str(Log::WARNING, "entry does not exist"));
         return;
     }
 
     if (!ret->m_entry->is_directory) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "entry '" + std::string(ret->m_entry->dir_entry_name) + "' is not a directory"));
+        BUFFER << (LOG_str(Log::WARNING, "entry '" + std::string(ret->m_entry->dir_entry_name) + "' is not a directory"));
         return;
     }
 
@@ -774,7 +774,7 @@ void FAT32::rm(std::vector<std::string>&tokens) noexcept {
         dir_entr_ret_t* entry = parsePath(parts, 0x1);
 
         if (entry == nullptr) {
-            BUFFER->append_buffer(LOG_str(Log::WARNING, "Path is not valid, either directory/file's specified are non-existant"));
+            BUFFER << (LOG_str(Log::WARNING, "Path is not valid, either directory/file's specified are non-existant"));
             delete entry;
             return;
         }
@@ -799,7 +799,7 @@ void FAT32::touch(std::vector<std::string>& parts, const char* buffer) noexcept 
         const char* init_file_name = tokens[tokens.size() - 1].c_str();
 
         if(!entr) {
-            BUFFER->append_buffer(LOG_str(Log::WARNING, "Path specified is invalid"));
+            BUFFER << (LOG_str(Log::WARNING, "Path specified is invalid"));
             delete entr;
             return;
         }
@@ -815,16 +815,16 @@ void FAT32::cat(const char* path) noexcept {
     dir_entr_ret_t* entr = parsePath(tokens, 0x1);
 
     if(!entr) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "Path specified is invalid"));
+        BUFFER << (LOG_str(Log::WARNING, "Path specified is invalid"));
         return;
     }
 
     std::string buffer = read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str());
-    BUFFER->append_buffer(("\n%s\n%s\n%s\n\n", tokens[tokens.size() - 1].c_str(), "------------", buffer.c_str()));
+    BUFFER << (("\n%s\n%s\n%s\n\n", tokens[tokens.size() - 1].c_str(), "------------", buffer.c_str()));
 }
 
 void FAT32::ls() noexcept {
-    BUFFER->append_buffer("\n");
+    BUFFER << ("\n");
     print_dir(*m_curr_dir);
 }
 
@@ -838,51 +838,57 @@ FAT32::dir_entry_t* FAT32::find_entry(dir_t & dir, const char* entry, uint8_t sh
     }
 
     if (shd_exst == 1 && ret == nullptr) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', could not be found"));
+        BUFFER << (LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', could not be found"));
     } else if (shd_exst == 0 && ret != nullptr) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', already exists"));
+        BUFFER << (LOG_str(Log::WARNING, "entry '" + std::string(entry) + "', already exists"));
     }
 
     return ret;
 }
 
 void FAT32::print_super_block() const noexcept {
-    char buffer[1024];
-    sprintf(buffer, "\n%s%s\n", "   Super block\n", " ---------------");
+    char buffer[400];
+    BUFFER << "\n   Super block\n ---------------\n\n";
 
-    sprintf(buffer + strlen(buffer), "  meta data\n-------------\n");
-    sprintf(buffer + strlen(buffer), " -> Disk:            %s\n", m_superblock.data.disk_name);
-    sprintf(buffer + strlen(buffer), " -> Disk size:       %db\n", m_superblock.data.disk_size);
-    sprintf(buffer + strlen(buffer), " -> Superblock size: %db\n", m_superblock.data.superblock_size);
-    sprintf(buffer + strlen(buffer), " -> Fat table size:  %db\n", m_superblock.data.fat_table_size);
-    sprintf(buffer + strlen(buffer), " -> User space:      %db\n", m_superblock.data.user_size);
-    sprintf(buffer + strlen(buffer), " -> Cluster size:    %db\n", m_superblock.data.cluster_size);
-    sprintf(buffer + strlen(buffer), " -> Cluster amount:  %d\n", m_superblock.data.cluster_n);
+    BUFFER << "  meta data\n-------------\n";
+    BUFFER << " -> Disk:            " << m_superblock.data.disk_name << "\n";
+    BUFFER << " -> Disk size:       " << m_superblock.data.disk_size << "\n";
+    BUFFER << " -> Superblock size: " << m_superblock.data.superblock_size << "\n";
+    BUFFER << " -> Fat table size:  " << m_superblock.data.fat_table_size << "\n";
+    BUFFER << " -> User space:      " << m_superblock.data.user_size << "\n";
+    BUFFER << " -> Cluster size:    " << m_superblock.data.cluster_size << "\n";
+    BUFFER << " -> Cluster amount:  " << m_superblock.data.cluster_n << "\n";
 
-    sprintf(buffer + strlen(buffer), "\n  %s\n-----------------\n", "Address space");
-    sprintf(buffer + strlen(buffer), " -> [superblock : 0x%.8x]\n", m_superblock.superblock_addr);
+    BUFFER << "\n  Address space\n-----------------\n";
+
+
+    sprintf(buffer, " -> [superblock : 0x%.8x]\n", m_superblock.superblock_addr);
     sprintf(buffer + strlen(buffer), " -> [fat_table  : 0x%.8x]\n", m_superblock.fat_table_addr);
     sprintf(buffer + strlen(buffer), " -> [user_space : 0x%.8x]\n", m_superblock.root_dir_addr);
     sprintf(buffer + strlen(buffer), "%s\n%s\n", "-----------------", "    End");
 
-    BUFFER->append_buffer(buffer);
+    BUFFER << (buffer);
 }
 
 void FAT32::print_fat_table() const noexcept {
     char buffer[1024 * 4];
     sprintf(buffer, "\n%s%s\n", "    Fat table\n", " --------------");
     for (int i = 0; i < CLUSTER_AMT; i++) {
+        if(strlen(buffer) > (1024 * 4)) {
+            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print directory");
+            return;
+        }
         sprintf(buffer + strlen(buffer), "[%d : 0x%.8x]\n", i, m_fat_table[i]);
     }
     sprintf(buffer + strlen(buffer), "%s\n%s\n\n", "--------------", "    End");
 
-    BUFFER->append_buffer(buffer);
+    BUFFER << (buffer);
 }
 
 void FAT32::print_dir(dir_t & dir) const noexcept {
-    char buffer[1024];
+    char buffer[1024 * 4];
     if ((dir_t*)&dir == NULL) {
-        BUFFER->append_buffer(LOG_str(Log::WARNING, "specified directory to be printed is null"));
+        BUFFER << (LOG_str(Log::WARNING, "specified directory to be printed is null"));
         return;
     }
 
@@ -894,10 +900,14 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
     sprintf(buffer + strlen(buffer), "\n %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
 
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
+        if(strlen(buffer) > (1024 * 4)) {
+            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print directory");
+            return;
+        }
         sprintf(buffer + strlen(buffer), "%05db%8s%02d%10s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
     }
     sprintf(buffer + strlen(buffer), "-------------------------------");
     sprintf(buffer + strlen(buffer), "\n");
 
-    BUFFER->append_buffer(buffer);
+    BUFFER << (buffer);
 }
