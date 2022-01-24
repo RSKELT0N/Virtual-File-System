@@ -1,6 +1,6 @@
-# FAT32
+# VFS
 ````
-An emulation of FAT File System
+An emulation of Virtual File System
 ````
 
 ## Compile and execute
