@@ -20,7 +20,7 @@ Log *Log::logInstance = NULL;
 
 Log::~Log()
 {
-    delete logInstance;
+    printf("Deleted Logger\n");
 }
 
 Log *Log::getInstance()

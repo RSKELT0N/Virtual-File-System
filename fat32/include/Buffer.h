@@ -5,19 +5,23 @@
 #include <stdio.h>
 #include <string>
 
+#include "config.h"
+
 class Buffer {
    
 private:
     Buffer();
     Buffer(Buffer&&) = delete;
     Buffer(const Buffer&);
+    
+public:
     ~Buffer();
 
 
 public:
     static Buffer* get_buffer() noexcept;
-    Buffer& operator<<(const char*) noexcept;
     Buffer& operator<<(int) noexcept;
+    Buffer& operator<<(const char*) noexcept;
 
     void hold_buffer() noexcept;
     void release_buffer() noexcept;

@@ -21,9 +21,9 @@ Server::Server() {
 
 Server::~Server() {
     info.state = CFG_SOCK_CLOSE;
-
     close(conn.m_socket_fd);
     delete clients;
+    printf("Deleted Server\n");
     BUFFER << LOG_str(Log::INFO, "Socket has been closed off for conntection");
 }
 
@@ -38,7 +38,7 @@ void Server::init() noexcept {
     sprintf(str, "%d", conn.m_port);
     BUFFER << LOG_str(Log::SERVER, "Server has been initialised: [Port : " + std::string(str) + "]");
     BUFFER << "---------  End  -------\n";
-    std::thread run_(&Server::run, this);
+    this->run_ = std::thread(&Server::run, this);
     run_.detach();
 }
 
@@ -84,21 +84,32 @@ void Server::run() noexcept {
     sockaddr_in client;
     socklen_t clientSize = sizeof(client);
 
+    fd_set master_set;
+    struct timeval tv;
+
     while(info.state == CFG_SOCK_OPEN) {
-        if((socket = accept(conn.m_socket_fd,(sockaddr *)&client,&clientSize)) == -1) {
-            BUFFER << LOG_str(Log::WARNING, "Client socket has failed to join");
-            continue;
-        }
+        FD_ZERO(&master_set);
+        FD_SET(conn.m_socket_fd, &master_set);
+        tv.tv_sec = SOCKET_ACCEPT_TIME;
 
-        if(info.users_c == info.max_usr_c) {
-            BUFFER << LOG_str(Log::WARNING, "Client: [" + find_ip(client) + "] has tried to join, Server is full");
-            close(socket);
-            continue;
-        }
+        select(conn.m_socket_fd + 1, &master_set, NULL, NULL, &tv);
+        
+        if(FD_ISSET(conn.m_socket_fd, &master_set)) {
+            if((socket = accept(conn.m_socket_fd,(sockaddr *)&client,&clientSize)) == -1) {
+                BUFFER << LOG_str(Log::WARNING, "Client socket has failed to join");
+                continue;
+            }
 
-        info.users_c++;
-        add_client(socket, client);
-        BUFFER << LOG_str(Log::SERVER, "Client has joined");
+            if(info.users_c == info.max_usr_c) {
+                BUFFER << LOG_str(Log::WARNING, "Client: [" + find_ip(client) + "] has tried to join, Server is full");
+                close(socket);
+                continue;
+            }
+
+            info.users_c++;
+            add_client(socket, client);
+            BUFFER << LOG_str(Log::SERVER, "Client has joined");
+        }
     }
 }
 
@@ -107,6 +118,7 @@ void Server::add_client(const uint32_t& sock, const sockaddr_in& hnt) noexcept {
     tmp->sock_fd = (int)sock;
     tmp->hint = hnt;
     tmp->ip = find_ip(tmp->hint).c_str();
+    tmp->state = CFG_SOCK_OPEN;
 
     clients->push_back(std::make_pair(clients->size(), tmp));
     tmp->thrd = new std::thread(&Server::handle, this, (tmp));
@@ -114,7 +126,7 @@ void Server::add_client(const uint32_t& sock, const sockaddr_in& hnt) noexcept {
 }
 
 void Server::handle(client_t* client) noexcept {
-    while(info.state == CFG_SOCK_OPEN) {
+    while(info.state == CFG_SOCK_OPEN && client->state == CFG_SOCK_OPEN) {
         receive(*client);
     }
 }
@@ -173,7 +185,8 @@ void Server::recv_(char* buffer, client_t& client) noexcept {
         BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
     } else if(val == 0) {
         info.users_c--;
-        info.state = CFG_SOCK_CLOSE;
+        client.state = CFG_SOCK_CLOSE;
+        BUFFER << LOG_str(Log::SERVER, "A client has disconnected");
     } else if(val > 0) return;
 }
 
@@ -196,7 +209,10 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         payload = retain_payloads(*container->payloads);
 
     VFS* tvfs = VFS::get_vfs();
-    (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
+
+    if(tvfs->is_mnted())
+        (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
+    else BUFFER << LOG_str(Log::WARNING, "Server does not have a system mounted");
 
     const char* stream = BUFFER.retain_buffer();
 

@@ -44,6 +44,7 @@ VFS::system_t::~system_t() {
                 case hash("fat32"): delete static_cast<FAT32*>(fs); break;
                 case hash("rfs"):   delete static_cast<Client*>(fs); break;
         }
+        printf("Deleted IFS\n");
     }
 }
 
@@ -68,6 +69,11 @@ VFS::~VFS() {
     delete mnted_system;
     free(disks);
     free(vfs);
+    printf("Deleted VFS\n");
+}
+
+const bool VFS::is_mnted() const noexcept {
+    return this->mnted_system->fs == nullptr ? false : true;
 }
 
 VFS::system_t*& VFS::get_mnted_system() noexcept {
@@ -143,6 +149,7 @@ void VFS::rm_disk(std::vector<std::string>& parts) {
 }
 
 void VFS::add_remote(std::vector<std::string>& parts) {
+
     if(disks->find(parts[2]) != disks->end()) {
         BUFFER << LOG_str(Log::WARNING, "There is an existing remote connection with that name already");
         return;
@@ -280,7 +287,7 @@ void VFS::control_rfs(std::vector<std::string>& parts) noexcept {
 void VFS::vfs_help() const noexcept {
     BUFFER << "------  VFS HELP  ------\n";
     for(int i = 0; i < sys_cmds->at(0).flags.size(); i++) {
-        BUFFER << " -> " << sys_cmds->at(0).flags.at(i).name << "-" << sys_cmds->at(0).flags.at(i).desc << "\n";
+        BUFFER << " -> " << sys_cmds->at(0).flags.at(i).name << " - " << sys_cmds->at(0).flags.at(i).desc << "\n";
     }
     BUFFER << "------  END  ------\n";
 }

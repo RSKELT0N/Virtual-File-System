@@ -20,10 +20,12 @@ terminal::terminal() {
 }
 
 terminal::~terminal() {
-    BUFFER << LOG_str(Log::INFO, "Exiting VFS..");
+    printf("Exiting VFS..\n");
     delete m_extern_cmds;
-    BUFFER << "Deleted terminal\n";
+    printf("Deleted terminal\n");
+    BUFFER.~Buffer();
     m_vfs->~VFS();
+    delete LOG_INSTANCE;
 }
 
 void terminal::run() noexcept {
@@ -43,6 +45,9 @@ void terminal::run() noexcept {
 
         std::getline(std::cin, line);
 
+        if(strcmp(line.c_str(), "exit") == 0)
+            return;
+
         if(!line.empty()) {
             BUFFER.hold_buffer();
             input(line.c_str());
@@ -60,7 +65,7 @@ void terminal::input(const char* line) noexcept {
     VFS::system_cmd command = validate_cmd(args);
     terminal::cmd_environment cmd_env = cmdToEnv(command);
 
-    if(cmd_env != m_env && cmd_env != terminal::HYBRID && m_env != terminal::REMOTE) {
+    if(!m_vfs->is_mnted() && cmd_env == EXTERNAL) {
         BUFFER << LOG_str(Log::WARNING, "Command is used within the wrong context");
         return;
     }
@@ -84,7 +89,7 @@ uint8_t terminal::interpret_int(std::string line) noexcept {
 void terminal::interpret_ext(VFS::system_cmd cmd, cmd_environment cmd_env, std::vector<std::string>& args) noexcept {
 
     if(cmd == VFS::system_cmd::invalid) {
-        BUFFER << "command is invalid\n";
+        BUFFER << "command is invalid, use /help\n";
         return;
     }
 
@@ -126,11 +131,15 @@ void terminal::set_env(cmd_environment env) noexcept {
 }
 
 void terminal::print_help() noexcept {
-    BUFFER << "---------  %s  ---------\n", "Help";
+    BUFFER << "\n--------- Help ---------\n";
+    uint32_t j = 0;
     for(auto i = m_vfs->get_sys_cmds()->begin(); i != m_vfs->get_sys_cmds()->end(); i++) {
-        printf(" -> %s\n", i->desc);
+        BUFFER << VFS::syscmd_str[j] << " -> " << i->desc << "\n";
+        j++;
     }
-    BUFFER << "---------  %s  ---------\n", "End";
+
+    BUFFER << "\nvfs - must start with '/'\n";
+    BUFFER << "---------  End  ---------\n";
 }
 
 
@@ -157,7 +166,7 @@ VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
             break;
 
         case hash("rfs"):
-            if(parts.size() != 4 && parts.size() != 6)
+            if(parts.size() != 6)
                 return VFS::system_cmd::invalid;
             break;
 

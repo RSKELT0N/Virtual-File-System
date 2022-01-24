@@ -7,13 +7,18 @@ FILE* FS::get_file_handlr(const char* file) noexcept {
 
 std::string FS::get_ext_file_buffer(const char* path) noexcept {
     FILE* file = get_file_handlr(path);
+
+    if(file == NULL) {
+        return (char*)"";
+    }
+
     fseek(file, 0, SEEK_END);
     size_t fsize = ftell(file);
     rewind(file);
 
     char buffer[fsize];
     fread(buffer, sizeof(char), fsize, file);
-
     fclose(file);
+
     return std::string(buffer);
 }

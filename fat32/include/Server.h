@@ -9,6 +9,8 @@
 #include "RFS.h"
 
 #ifndef _WIN32
+    #include <sys/time.h>
+    #include <sys/types.h>
     #include <netinet/in.h>
     #include <unistd.h>
 #else
@@ -16,6 +18,7 @@
     #include <ws2tcpip.h>
 #endif
 
+#define SOCKET_ACCEPT_TIME    (time_t)5
 
 #define SOCK_OPEN             (uint8_t)1
 #define SOCK_CLOSE            (uint8_t)0
@@ -41,6 +44,7 @@ private:
     }info;
 
     struct client_t {
+        uint8_t state;
         int sock_fd;
         sockaddr_in hint;
         const char* ip;
@@ -82,6 +86,7 @@ public:
 private:
     std::vector<std::pair<uint32_t, client_t*>>* clients;
     std::vector<const char*> logs;
+    std::thread run_;
 };
 
 #endif // _SERVER_H_

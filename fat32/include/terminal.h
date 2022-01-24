@@ -15,7 +15,6 @@ class terminal {
 public:
     enum cmd_environment {
         EXTERNAL,
-        REMOTE,
         HYBRID,
         INTERNAL
     };

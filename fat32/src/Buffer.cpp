@@ -20,8 +20,8 @@ Buffer::Buffer() {
 }
 
 Buffer::~Buffer() {
-    delete mBuf_p;
     delete mLock;
+    printf("Deleted Buffer\n");
 }
 
 Buffer::Buffer(const Buffer&) {
@@ -49,9 +49,12 @@ const char* Buffer::retain_buffer() noexcept {
 }
 
 Buffer& Buffer::operator<<(const char* str) noexcept {
-    mStream += str;
-
-    const char* tmp = mStream.c_str();
+    if(mStream.size() < BUFFER_MAX)
+        mStream += str;
+    else {
+        printf("%s", mStream.c_str());
+        mStream.clear();
+    }
 
     return *(this);
 }

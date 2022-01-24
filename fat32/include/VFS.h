@@ -37,7 +37,7 @@ public:
         cat
     };
 
-    static constexpr const char* syscmd_str[] = {"VFS", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
+    static constexpr const char* syscmd_str[] = {"vfs", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
 
     struct flag_t {
          const char* name;
@@ -101,6 +101,7 @@ public:
 public:
     void load_disks() noexcept;
     static VFS*& get_vfs() noexcept;
+    const bool is_mnted() const noexcept; 
     system_t*& get_mnted_system() noexcept;
     std::vector<VFS::cmd_t>* get_sys_cmds() noexcept;
 

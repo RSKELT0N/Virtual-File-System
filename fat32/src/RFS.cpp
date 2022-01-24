@@ -1,6 +1,6 @@
 #include "../include/RFS.h"
 
-RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>& args, const char* payload) noexcept {
+RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>& args, std::string payload) noexcept {
         pcontainer_t* con = new pcontainer_t;
 
         std::string flags = {};
@@ -13,7 +13,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         con->info.cmd = cmd;
         memcpy(con->info.flags, flags.c_str(), FLAGS_BUFFER_SIZE);
         
-        size_t load_size = strlen(payload);
+        size_t load_size = payload.size();
 
         if(load_size == 0)
             con->info.ispl = 0x0;
@@ -21,13 +21,13 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
         if(con->info.ispl == 0x1) {
             size_t data_read = {};
-            size_t amount_of_payloads = load_size / PAYLOAD_SIZE;
+            int amount_of_payloads = load_size / PAYLOAD_SIZE;
 
             if(load_size > PAYLOAD_SIZE)
                 if(load_size % PAYLOAD_SIZE)
                     amount_of_payloads++;
 
-            for(int i = 0; i < amount_of_payloads - 1; i++) {
+            for(int i = 0; i < (amount_of_payloads - 1); i++) {
                 payload_t tmp;
                 tmp.mf = 0x1;
                 tmp.payload_size = PAYLOAD_SIZE;
@@ -140,8 +140,10 @@ void RFS::print_packet(const packet_t& pckt) const noexcept {
 void RFS::print_payload(const payload_t& pyld) const noexcept {
     BUFFER << "\n---- PAYLOAD ----\n -> mf : [" << pyld.mf << "]\n -> size : [" << pyld.payload_size << "]\n -> payload : [";
 
+    std::string stream = "";
     for(int i = 0; i < PAYLOAD_SIZE; i++) {
-        BUFFER << pyld.payload[i];
+        stream += pyld.payload[i];
     }
+    BUFFER << stream.c_str();
     BUFFER << "]\n-----------------\n";
 }

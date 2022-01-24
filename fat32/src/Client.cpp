@@ -51,7 +51,7 @@ void Client::connect() noexcept {
 }
 
 void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::string>& args) noexcept {
-    const char* payload = get_payload(str_cmd, args);
+    std::string payload = get_payload(str_cmd, args);
     pcontainer_t* container = generate_container(cmd, args, payload);
     // Serialize packet.
     char buffer[PACKET_SIZE];
@@ -120,13 +120,13 @@ void Client::run() noexcept {
     }
 }
 
-const char* Client::get_payload(const char* cmd, std::vector<std::string>& args) noexcept {
-    char* payload = "";
+std::string Client::get_payload(const char* cmd, std::vector<std::string>& args) noexcept {
+    std::string payload = "";
 
     if(strcmp(cmd, "cp") == 0) {
         if(strcmp(args[0].c_str(), "ext") == 0)
-            payload = (char*)FS::get_ext_file_buffer(args[1].c_str()).c_str();
+            payload = FS::get_ext_file_buffer(args[1].c_str());
     }
 
-    return static_cast<const char*>(payload);
+    return payload;
 }

@@ -9,15 +9,14 @@
 
 /* TODO:
     - add mutex for functions that can be accessed by multiple users.
-    - Ensure no buffer is overflowed, data send through socket to client/server is fragmented and attached to user buffer.
     - Validate that no data racing can take place and multiple users can access a mounted disk at once with mutex locks
      in place and correct buffering within the correct area.
-    - Stop circular include within server and client with VFS.
     - Stop simple errors such as no clusters left, cant find external file. Copying large file.
-    - Everything that is printed will be moved to buffer and be used by: Client, Server, Terminal.
+    - Fix RFS commands for removing, needs to say '!= 4' for checking validation. Also need to check for hybrid commands so it shows invalid command over wrong context.
 */
 
-#define BUFFER (*Buffer::get_buffer())
+#define BUFFER     (*Buffer::get_buffer())
+#define BUFFER_MAX (uint32_t)5000
 
 #define _DEBUG_ 0
 

@@ -41,7 +41,7 @@ public:
 public:
     void receive() noexcept;
     void send(const void*, size_t) noexcept;
-    const char* get_payload(const char*, std::vector<std::string>&) noexcept;
+    std::string get_payload(const char*, std::vector<std::string>&) noexcept;
     void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
 
 private:
