@@ -28,7 +28,7 @@
 #define CFG_SOCK_OPEN         (uint8_t)1
 #define CFG_SOCK_CLOSE        (uint8_t)0
 #define CFG_DEFAULT_PORT      (uint32_t)60000
-#define CFG_SOCK_LISTEN_AMT   (uint32_t)1
+#define CFG_SOCK_LISTEN_AMT   (uint32_t)5
 
 #define CFG_PACKET_SIZE       (size_t)1024
 #define CFG_FLAGS_BUFFER_SIZE (size_t)25

@@ -11,7 +11,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         flags[flags.size() - 1] = '\0';
 
         con->info.cmd = cmd;
-        memcpy(con->info.flags, flags.c_str(), FLAGS_BUFFER_SIZE);
+        memcpy(con->info.flags, flags.c_str(), CFG_FLAGS_BUFFER_SIZE);
         
         size_t load_size = payload.size();
 
@@ -21,20 +21,20 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
         if(con->info.ispl == 0x1) {
             size_t data_read = {};
-            int amount_of_payloads = load_size / PAYLOAD_SIZE;
+            int amount_of_payloads = load_size / CFG_PAYLOAD_SIZE;
 
-            if(load_size > PAYLOAD_SIZE)
-                if(load_size % PAYLOAD_SIZE)
+            if(load_size > CFG_PAYLOAD_SIZE)
+                if(load_size % CFG_PAYLOAD_SIZE)
                     amount_of_payloads++;
 
             for(int i = 0; i < (amount_of_payloads - 1); i++) {
                 payload_t tmp;
                 tmp.mf = 0x1;
-                tmp.payload_size = PAYLOAD_SIZE;
-                memcpy(tmp.payload, &(payload[data_read]), PAYLOAD_SIZE);
+                tmp.payload_size = CFG_PAYLOAD_SIZE;
+                memcpy(tmp.payload, &(payload[data_read]), CFG_PAYLOAD_SIZE);
                 con->payloads->push_back(tmp);
 
-                data_read += PAYLOAD_SIZE;
+                data_read += CFG_PAYLOAD_SIZE;
             }
 
             size_t remaining_data = load_size - data_read;
@@ -69,7 +69,7 @@ void RFS::serialize_packet(packet_t& pckt, char* buffer) noexcept {
     char* char_p = (char*)int_p;
     int flag_c = 0;
 
-    while(flag_c < FLAGS_BUFFER_SIZE) {
+    while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
         *char_p = pckt.flags[flag_c];
         char_p++;
         flag_c++;
@@ -87,7 +87,7 @@ void RFS::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     char* char_p = (char*)int_p;
     int flag_c = 0;
 
-    while(flag_c < FLAGS_BUFFER_SIZE) {
+    while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
         pckt.flags[flag_c] = *char_p;
         char_p++;
         flag_c++;
@@ -108,7 +108,7 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)int_size_p;
     int pylad_c = 0;
 
-    while(pylad_c < PAYLOAD_SIZE) {
+    while(pylad_c < CFG_PAYLOAD_SIZE) {
         *char_p = pyld.payload[pylad_c];
         char_p++;
         pylad_c++;
@@ -126,7 +126,7 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)int_size_p;
     int pylad_c = 0;
 
-    while(pylad_c < PAYLOAD_SIZE) {
+    while(pylad_c < CFG_PAYLOAD_SIZE) {
         pyld.payload[pylad_c] = *char_p;
         char_p++;
         pylad_c++;
@@ -141,7 +141,7 @@ void RFS::print_payload(const payload_t& pyld) const noexcept {
     BUFFER << "\n---- PAYLOAD ----\n -> mf : [" << pyld.mf << "]\n -> size : [" << pyld.payload_size << "]\n -> payload : [";
 
     std::string stream = "";
-    for(int i = 0; i < PAYLOAD_SIZE; i++) {
+    for(int i = 0; i < CFG_PAYLOAD_SIZE; i++) {
         stream += pyld.payload[i];
     }
     BUFFER << stream.c_str();
