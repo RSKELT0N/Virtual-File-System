@@ -820,7 +820,8 @@ void FAT32::cat(const char* path) noexcept {
     }
 
     std::string buffer = read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str());
-    BUFFER << (("\n%s\n%s\n%s\n\n", tokens[tokens.size() - 1].c_str(), "------------", buffer.c_str()));
+    BUFFER << ("\n%s\n%s\n%s\n\n", tokens[tokens.size() - 1].c_str(), "------------", buffer.c_str());
+    BUFFER << "\n";
 }
 
 void FAT32::ls() noexcept {

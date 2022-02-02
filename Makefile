@@ -6,7 +6,7 @@ CXX      := g++ -std=gnu++17
 TARGET   := filesystem
 CXXFLAGS := -w -g
 DEPFLAGS := -MMD -MF $(@:.o=.d)
-SRC      := fat32/src
+SRC      := vfs_/src
 BIN      := bin
 DISKS    := disks
 CPP       = $(wildcard $(SRC)/*.cpp)

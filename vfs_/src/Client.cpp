@@ -54,29 +54,29 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     std::string payload = get_payload(str_cmd, args);
     pcontainer_t* container = generate_container(cmd, args, payload);
     // Serialize packet.
-    char buffer[PACKET_SIZE];
-    memset(buffer, 0, PACKET_SIZE);
+    char buffer[CFG_PACKET_SIZE];
+    memset(buffer, 0, CFG_PACKET_SIZE);
     serialize_packet(container->info, buffer);
 
     // sending info packet towards server, with command info related to input. Formatted ispl.
-    send(buffer, PACKET_SIZE);
+    send(buffer, CFG_PACKET_SIZE);
 
     int i;
     // checking if payload flag is set
     if(container->info.ispl) {
         // looping through payloads until mf is not equal to zero.
         for(i = 0; container->payloads->at(i).mf == 1; i++) {
-            memset(buffer, 0, PACKET_SIZE);
+            memset(buffer, 0, CFG_PACKET_SIZE);
             // Serialize payload
             serialize_payload(container->payloads->at(i), buffer);
             // send payload per fragment.
-            send(buffer, PACKET_SIZE);
+            send(buffer, CFG_PACKET_SIZE);
         }
-        memset(buffer, 0, PACKET_SIZE);
+        memset(buffer, 0, CFG_PACKET_SIZE);
         // Serialize payload
         serialize_payload(container->payloads->at(i), buffer);
         // send last payload with mf whichs to zero.
-        send(buffer, PACKET_SIZE);
+        send(buffer, CFG_PACKET_SIZE);
     }
     //packet has been sent.
     delete container;
@@ -90,10 +90,10 @@ void Client::send(const void* buffer, size_t buffer_size) noexcept {
 }
 
 void Client::receive() noexcept {
-    char buffer[BUFFER_SIZE];
+    char buffer[CFG_PACKET_SIZE];
     int val = 0;
 
-    if((val = recv(conn.m_socket_fd, buffer, BUFFER_SIZE, 0)) == -1) {
+    if((val = recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, 0)) == -1) {
         BUFFER << (LOG_str(Log::ERROR_, "Client was unable to read incoming data from mounted server"));
     } else if (val == 0) {
         info.state = CFG_SOCK_CLOSE;

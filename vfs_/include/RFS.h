@@ -9,23 +9,19 @@
 #include "config.h"
 #include "FS.h"
 
-#define PACKET_SIZE       (size_t)1024
-#define FLAGS_BUFFER_SIZE (size_t)25
-#define PAYLOAD_SIZE      (size_t)1000
-
 class RFS : public FS {
 
 protected:
     struct packet_t {
         uint8_t cmd;
-        char flags[FLAGS_BUFFER_SIZE];
+        char flags[CFG_FLAGS_BUFFER_SIZE];
         uint8_t ispl : 1;
     } __attribute__((packed));
 
     struct payload_t {
         uint8_t mf : 1;
         int payload_size;
-        char payload[PAYLOAD_SIZE];
+        char payload[CFG_PAYLOAD_SIZE];
     } __attribute__((packed));
 
     struct pcontainer_t {

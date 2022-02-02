@@ -133,7 +133,7 @@ void Server::handle(client_t* client) noexcept {
 
 void Server::receive(client_t& client) noexcept {
     int val = 0;
-    char buffer[PACKET_SIZE];
+    char buffer[CFG_PACKET_SIZE];
     // declare container to store info and payload packets.
     pcontainer_t* container = new pcontainer_t;
     // recv info packet and store it within the container info address.
@@ -141,7 +141,7 @@ void Server::receive(client_t& client) noexcept {
     // deserialize packet.
     deserialize_packet(container->info, buffer);
     // reset buffer array.
-    memset(buffer, 0, PACKET_SIZE);
+    memset(buffer, 0, CFG_PACKET_SIZE);
     // check whether info has any payload.
     if(container->info.ispl == 0x0)
         goto no_payload;
@@ -157,8 +157,8 @@ void Server::receive(client_t& client) noexcept {
     // check whether first payload has any mf flag set to 0x1 and then the last 0x0.
     while(tmp.mf == 0x1) {
         // reset buffer array.
-        memset(buffer, 0, PACKET_SIZE);
-        memset(tmp.payload, 0, PAYLOAD_SIZE);
+        memset(buffer, 0, CFG_PACKET_SIZE);
+        memset(tmp.payload, 0, CFG_PAYLOAD_SIZE);
         // recv a payload
         recv_(buffer, client);
 
@@ -173,14 +173,14 @@ void Server::receive(client_t& client) noexcept {
 }
 
 void Server::send(const char* buffer, client_t& client) noexcept {
-    if(::send(client.sock_fd, buffer, BUFFER_SIZE, 1) == -1) {
+    if(::send(client.sock_fd, buffer, CFG_PACKET_SIZE, 1) == -1) {
         BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
     }
 }
 
 void Server::recv_(char* buffer, client_t& client) noexcept {
     int val = 0;
-    val = recv(client.sock_fd, buffer, PACKET_SIZE, 0);
+    val = recv(client.sock_fd, buffer, CFG_PACKET_SIZE, 0);
     if(val == -1) {
         BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
     } else if(val == 0) {
@@ -222,10 +222,12 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 
     BUFFER.release_buffer();
 
-    // print_packet(container->info);
-    // for(int i = 0; i < container->payloads->size(); i++) {
-    //     print_payload(container->payloads->at(i));
-    // }
+#if _DEBUG_
+    print_packet(container->info);
+    for(int i = 0; i < container->payloads->size(); i++) {
+        print_payload(container->payloads->at(i));
+    }
+#endif // _DEBUG_
 }
 
 std::string Server::find_ip(const sockaddr_in& sock) const noexcept {
