@@ -902,7 +902,7 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
 
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
         if(strlen(buffer) > (1024 * 4)) {
-            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print directory");
+            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print FAT table");
             return;
         }
         sprintf(buffer + strlen(buffer), "%05db%8s%02d%10s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
