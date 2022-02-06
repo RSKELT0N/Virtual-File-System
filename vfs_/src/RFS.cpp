@@ -87,7 +87,7 @@ void RFS::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     char* char_p = (char*)int_p;
     int flag_c = 0;
 
-    while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
+    while(flag_c < CFG_FLAGS_BUFFER_SIZE && buffer[flag_c] != '\0') {
         pckt.flags[flag_c] = *char_p;
         char_p++;
         flag_c++;
@@ -106,12 +106,12 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     *int_size_p = pyld.payload_size; int_size_p++;
     //Store payload.
     char* char_p = (char*)int_size_p;
-    int pylad_c = 0;
+    int flag_c = 0;
 
-    while(pylad_c < CFG_PAYLOAD_SIZE) {
-        *char_p = pyld.payload[pylad_c];
+    while(flag_c < CFG_PAYLOAD_SIZE && buffer[flag_c] != '\0') {
+        *char_p = pyld.payload[flag_c];
         char_p++;
-        pylad_c++;
+        flag_c++;
     }
 }
 

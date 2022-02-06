@@ -31,17 +31,17 @@ terminal::~terminal() {
 void terminal::run() noexcept {
     std::string line;
 
-    BUFFER << "-------------------------------------------------\n";
+    BUFFER << "-------------------------------------------------";
 
     while(1) {
         const char* str = BUFFER.retain_buffer();
-        printf("%s", str);
 
-        BUFFER.release_buffer();
-
-        if(m_env == terminal::EXTERNAL)
+        if(*str == '\0')
             printf("%s", "-> ");
-        else printf("%s> ", path.c_str());
+        else {
+            printf("%s\n-> ", str);
+        }
+        BUFFER.release_buffer();
 
         std::getline(std::cin, line);
 

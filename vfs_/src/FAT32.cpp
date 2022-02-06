@@ -825,7 +825,6 @@ void FAT32::cat(const char* path) noexcept {
 }
 
 void FAT32::ls() noexcept {
-    BUFFER << ("\n");
     print_dir(*m_curr_dir);
 }
 
@@ -853,10 +852,10 @@ void FAT32::print_super_block() const noexcept {
 
     BUFFER << "  meta data\n-------------\n";
     BUFFER << " -> Disk:            " << m_superblock.data.disk_name << "\n";
-    BUFFER << " -> Disk size:       " << m_superblock.data.disk_size << "\n";
-    BUFFER << " -> Superblock size: " << m_superblock.data.superblock_size << "\n";
-    BUFFER << " -> Fat table size:  " << m_superblock.data.fat_table_size << "\n";
-    BUFFER << " -> User space:      " << m_superblock.data.user_size << "\n";
+    BUFFER << " -> Disk size:       " << m_superblock.data.disk_size << "b\n";
+    BUFFER << " -> Superblock size: " << m_superblock.data.superblock_size << "b\n";
+    BUFFER << " -> Fat table size:  " << m_superblock.data.fat_table_size << "b\n";
+    BUFFER << " -> User space:      " << m_superblock.data.user_size << "b\n";
     BUFFER << " -> Cluster size:    " << m_superblock.data.cluster_size << "\n";
     BUFFER << " -> Cluster amount:  " << m_superblock.data.cluster_n << "\n";
 
@@ -893,7 +892,7 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
         return;
     }
 
-    sprintf(buffer, "Directory:        %s\n", dir.dir_header.dir_name);
+    sprintf(buffer, "\rDirectory:        %s\n", dir.dir_header.dir_name);
     sprintf(buffer + strlen(buffer), "Start cluster:    %d\n", dir.dir_header.start_cluster_index);
     sprintf(buffer + strlen(buffer), "Parent cluster:   %d\n", dir.dir_header.parent_cluster_index);
     sprintf(buffer + strlen(buffer), "Entry amt:        %d\n", dir.dir_header.dir_entry_amt);
