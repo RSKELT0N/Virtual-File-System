@@ -50,8 +50,8 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         return con;
 }
 
-std::string RFS::retain_payloads(std::vector<payload_t>& pylds) noexcept {
-    std::string payloads = {};
+std::string* RFS::retain_payloads(std::vector<payload_t>& pylds) noexcept {
+    std::string* payloads = new std::string();
     
     int i;
     for(i = 0; i < pylds.size(); i++)

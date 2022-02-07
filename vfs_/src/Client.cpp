@@ -57,7 +57,6 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     char buffer[CFG_PACKET_SIZE];
     memset(buffer, 0, CFG_PACKET_SIZE);
     serialize_packet(container->info, buffer);
-
     // sending info packet towards server, with command info related to input. Formatted ispl.
     send(buffer, CFG_PACKET_SIZE);
 
@@ -83,7 +82,7 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
 }
 
 void Client::send(const void* buffer, size_t buffer_size) noexcept {
-    if(::send(conn.m_socket_fd, buffer, buffer_size, 0) == -1) {
+    if(::send(conn.m_socket_fd, buffer, buffer_size, MSG_NOSIGNAL) == -1) {
         BUFFER << LOG_str(Log::WARNING, "input could not be sent towards remote VFS");
         return;
     }
@@ -93,7 +92,7 @@ void Client::receive() noexcept {
     char buffer[CFG_PACKET_SIZE];
     int val = 0;
 
-    if((val = recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, 0)) == -1) {
+    if((val = recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL)) == -1) {
         BUFFER << (LOG_str(Log::ERROR_, "Client was unable to read incoming data from mounted server"));
     } else if (val == 0) {
         info.state = CFG_SOCK_CLOSE;

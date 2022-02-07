@@ -54,7 +54,7 @@ protected:
     void print_payload(const payload_t&) const noexcept;
 
 public:
-    std::string retain_payloads(std::vector<payload_t>&) noexcept;
+    std::string* retain_payloads(std::vector<payload_t>&) noexcept;
     pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, std::string payload) noexcept;
 };
 

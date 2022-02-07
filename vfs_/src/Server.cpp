@@ -173,14 +173,14 @@ void Server::receive(client_t& client) noexcept {
 }
 
 void Server::send(const char* buffer, client_t& client) noexcept {
-    if(::send(client.sock_fd, buffer, CFG_PACKET_SIZE, 1) == -1) {
+    if(::send(client.sock_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL) == -1) {
         BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
     }
 }
 
 void Server::recv_(char* buffer, client_t& client) noexcept {
     int val = 0;
-    val = recv(client.sock_fd, buffer, CFG_PACKET_SIZE, 0);
+    val = recv(client.sock_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL);
     if(val == -1) {
         BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
     } else if(val == 0) {
@@ -204,14 +204,14 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         }
     }
 
-    std::string payload = {};
+    std::string* payload = new std::string();
     if(container->info.ispl)
         payload = retain_payloads(*container->payloads);
 
     VFS* tvfs = VFS::get_vfs();
 
     if(tvfs->is_mnted())
-        (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
+        (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload->c_str());
     else BUFFER << LOG_str(Log::WARNING, "Server does not have a system mounted");
 
     send_to_client(client);
@@ -222,6 +222,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         print_payload(container->payloads->at(i));
     }
 #endif // _DEBUG_
+    delete payload;
 }
 
 void Server::send_to_client(client_t& client) noexcept {
@@ -233,35 +234,34 @@ void Server::send_to_client(client_t& client) noexcept {
         size_t data_read = {};
         int amount_of_payloads = load_size / CFG_PAYLOAD_SIZE;
 
-        if(load_size > CFG_PAYLOAD_SIZE) {
+        if(load_size > CFG_PAYLOAD_SIZE)
             if(load_size % CFG_PAYLOAD_SIZE)
                 amount_of_payloads++;
 
-            payload_t tmp;
-            for(int i = 0; i < (amount_of_payloads - 1); i++) {
-                tmp.mf = 0x1;
-                tmp.payload_size = CFG_PAYLOAD_SIZE;
-                memcpy(tmp.payload, &(stream[data_read]), CFG_PAYLOAD_SIZE);
-                serialize_payload(tmp, buffer);
-
-                send(buffer, client);
-                memset(buffer, 0, CFG_PACKET_SIZE);
-                data_read += CFG_PAYLOAD_SIZE;
-            }
-
-            size_t remaining_data = load_size - data_read;
-        
-            tmp.mf = 0x0;
-            tmp.payload_size = remaining_data;
-            memcpy(tmp.payload, &(stream[data_read]), remaining_data);
+        payload_t tmp;
+        for(int i = 0; i < (amount_of_payloads - 1); i++) {
+            tmp.mf = 0x1;
+            tmp.payload_size = CFG_PAYLOAD_SIZE;
+            memcpy(tmp.payload, &(stream[data_read]), CFG_PAYLOAD_SIZE);
             serialize_payload(tmp, buffer);
+
             send(buffer, client);
-        } else {
-            send(SERVER_REPONSE, client);
+            memset(buffer, 0, CFG_PACKET_SIZE);
+            data_read += CFG_PAYLOAD_SIZE;
         }
 
-        BUFFER.release_buffer();
+        size_t remaining_data = load_size - data_read;
+    
+        tmp.mf = 0x0;
+        tmp.payload_size = remaining_data;
+        memcpy(tmp.payload, &(stream[data_read]), remaining_data);
+        serialize_payload(tmp, buffer);
+        send(buffer, client);
+    } else {
+        send(SERVER_REPONSE, client);
     }
+
+    BUFFER.release_buffer();
 }
 
 std::string Server::find_ip(const sockaddr_in& sock) const noexcept {
