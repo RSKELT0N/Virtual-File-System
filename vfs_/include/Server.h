@@ -66,6 +66,7 @@ public:
     void run() noexcept override;
     void receive(client_t&) noexcept;
     void send(const char* buffer, client_t&) noexcept;
+    void send_to_client(client_t&) noexcept;
     void recv_(char* buffer, client_t&) noexcept;
 
 private:

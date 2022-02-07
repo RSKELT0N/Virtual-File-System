@@ -16,7 +16,7 @@
 */
 
 #define BUFFER     (*Buffer::get_buffer())
-#define BUFFER_MAX KB(10)
+#define BUFFER_MAX MB(10)
 
 #define _DEBUG_ 0
 
@@ -32,7 +32,7 @@
 
 #define CFG_PACKET_SIZE       (size_t)1024
 #define CFG_FLAGS_BUFFER_SIZE (size_t)50
-#define CFG_PAYLOAD_SIZE      (size_t)850
+#define CFG_PAYLOAD_SIZE      (size_t)250
 
 // ~~~~~~~~~~~ end ~~~~~~~~~~~~
 

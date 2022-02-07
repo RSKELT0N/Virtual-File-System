@@ -214,13 +214,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload.c_str());
     else BUFFER << LOG_str(Log::WARNING, "Server does not have a system mounted");
 
-    const char* stream = BUFFER.retain_buffer();
-
-    if(*stream != '\0') {
-        send(stream, client);
-    } else send(SERVER_REPONSE, client);
-
-    BUFFER.release_buffer();
+    send_to_client(client);
 
 #if _DEBUG_
     print_packet(container->info);
@@ -228,6 +222,46 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         print_payload(container->payloads->at(i));
     }
 #endif // _DEBUG_
+}
+
+void Server::send_to_client(client_t& client) noexcept {
+    const char* stream = BUFFER.retain_buffer();
+    size_t load_size = strlen(stream);
+
+    if(*stream != '\0') {
+        char buffer[CFG_PACKET_SIZE];
+        size_t data_read = {};
+        int amount_of_payloads = load_size / CFG_PAYLOAD_SIZE;
+
+        if(load_size > CFG_PAYLOAD_SIZE) {
+            if(load_size % CFG_PAYLOAD_SIZE)
+                amount_of_payloads++;
+
+            payload_t tmp;
+            for(int i = 0; i < (amount_of_payloads - 1); i++) {
+                tmp.mf = 0x1;
+                tmp.payload_size = CFG_PAYLOAD_SIZE;
+                memcpy(tmp.payload, &(stream[data_read]), CFG_PAYLOAD_SIZE);
+                serialize_payload(tmp, buffer);
+
+                send(buffer, client);
+                memset(buffer, 0, CFG_PACKET_SIZE);
+                data_read += CFG_PAYLOAD_SIZE;
+            }
+
+            size_t remaining_data = load_size - data_read;
+        
+            tmp.mf = 0x0;
+            tmp.payload_size = remaining_data;
+            memcpy(tmp.payload, &(stream[data_read]), remaining_data);
+            serialize_payload(tmp, buffer);
+            send(buffer, client);
+        } else {
+            send(SERVER_REPONSE, client);
+        }
+
+        BUFFER.release_buffer();
+    }
 }
 
 std::string Server::find_ip(const sockaddr_in& sock) const noexcept {

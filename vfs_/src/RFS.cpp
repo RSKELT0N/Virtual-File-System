@@ -87,7 +87,7 @@ void RFS::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     char* char_p = (char*)int_p;
     int flag_c = 0;
 
-    while(flag_c < CFG_FLAGS_BUFFER_SIZE && buffer[flag_c] != '\0') {
+    while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
         pckt.flags[flag_c] = *char_p;
         char_p++;
         flag_c++;
@@ -106,12 +106,12 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     *int_size_p = pyld.payload_size; int_size_p++;
     //Store payload.
     char* char_p = (char*)int_size_p;
-    int flag_c = 0;
+    int pyld_c = 0;
 
-    while(flag_c < CFG_PAYLOAD_SIZE && buffer[flag_c] != '\0') {
-        *char_p = pyld.payload[flag_c];
+    while(pyld_c < CFG_PAYLOAD_SIZE) {
+        *char_p = pyld.payload[pyld_c];
         char_p++;
-        flag_c++;
+        pyld_c++;
     }
 }
 
@@ -124,12 +124,12 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     pyld.payload_size = *int_size_p; int_size_p++;
     //Store payload into struct.
     char* char_p = (char*)int_size_p;
-    int pylad_c = 0;
+    int pyld_c = 0;
 
-    while(pylad_c < CFG_PAYLOAD_SIZE) {
-        pyld.payload[pylad_c] = *char_p;
+    while(pyld_c < CFG_PAYLOAD_SIZE) {
+        pyld.payload[pyld_c] = *char_p;
         char_p++;
-        pylad_c++;
+        pyld_c++;
     }
 }
 

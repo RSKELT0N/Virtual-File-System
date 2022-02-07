@@ -99,14 +99,29 @@ void Client::receive() noexcept {
         info.state = CFG_SOCK_CLOSE;
         VFS::get_vfs()->control_vfs({"umnt"});
         BUFFER << (LOG_str(Log::SERVER, "Disconnected from server"));
-    } else if(val > 0) {
+    } else if(val > 0) { 
         interpret_input(buffer);
     }
 }
 
 void Client::interpret_input(char* segs) noexcept {
     BUFFER.hold_buffer();
-    BUFFER << std::string(segs).c_str();
+
+    payload_t tmp;
+    deserialize_payload(tmp, segs);
+    BUFFER << tmp.payload;
+
+    char buffer[CFG_PACKET_SIZE];
+    char buff[CFG_PAYLOAD_SIZE];
+    while(tmp.mf == 0x1) {
+        memset(buffer, 0, CFG_PACKET_SIZE);
+        memset(buff, 0, CFG_PAYLOAD_SIZE);
+        recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, 0);
+        deserialize_payload(tmp, buffer);
+
+        strncpy(buff, tmp.payload, tmp.payload_size);
+        BUFFER << buff;
+    }
 
     const char* str = BUFFER.retain_buffer();
     printf("%s", str);

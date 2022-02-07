@@ -166,7 +166,7 @@ VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
             break;
 
         case hash("rfs"):
-            if(parts.size() != 6)
+            if(parts.size() != 4 && parts.size() != 6)
                 return VFS::system_cmd::invalid;
             break;
 
