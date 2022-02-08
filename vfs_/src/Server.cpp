@@ -178,16 +178,23 @@ void Server::send(const char* buffer, client_t& client) noexcept {
     }
 }
 
-void Server::recv_(char* buffer, client_t& client) noexcept {
-    int val = 0;
-    val = recv(client.sock_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL);
-    if(val == -1) {
-        BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
-    } else if(val == 0) {
-        info.users_c--;
-        client.state = CFG_SOCK_CLOSE;
-        BUFFER << LOG_str(Log::SERVER, "A client has disconnected");
-    } else if(val > 0) return;
+void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
+    int number_of_bytes = {};
+    size_t bytes_received = {};
+
+    while(number_of_bytes < bytes && (bytes_received = recv(client.sock_fd, buffer, bytes, MSG_NOSIGNAL)) > 0) {
+        number_of_bytes -= bytes_received;
+        buffer += bytes_received;
+
+        if(bytes_received == -1) {
+            *buffer = '\0';
+            BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
+        } else if(bytes_received == 0) {
+            info.users_c--;
+            client.state = CFG_SOCK_CLOSE;
+            BUFFER << LOG_str(Log::SERVER, "A client has disconnected");
+        } else if(bytes_received > 0) return;
+    }
 }
 
 void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept {

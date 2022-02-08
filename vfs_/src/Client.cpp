@@ -88,7 +88,7 @@ void Client::send(const void* buffer, size_t buffer_size) noexcept {
     }
 }
 
-void Client::receive() noexcept {
+void Client::receive(size_t bytes) noexcept {
     char buffer[CFG_PACKET_SIZE];
     int val = 0;
 

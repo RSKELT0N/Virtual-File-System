@@ -39,7 +39,7 @@ public:
     Client(const Client&) = delete;
 
 public:
-    void receive() noexcept;
+    void receive(size_t bytes = CFG_PACKET_SIZE) noexcept;
     void send(const void*, size_t) noexcept;
     std::string get_payload(const char*, std::vector<std::string>&) noexcept;
     void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
