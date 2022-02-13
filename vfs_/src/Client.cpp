@@ -58,49 +58,63 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     memset(buffer, 0, CFG_PACKET_SIZE);
     serialize_packet(container->info, buffer);
     // sending info packet towards server, with command info related to input. Formatted ispl.
-    send(buffer, CFG_PACKET_SIZE);
+    send(buffer, sizeof(packet_t));
 
     int i;
     // checking if payload flag is set
-    if(container->info.ispl) {
+    if(container->info.p_count) {
         // looping through payloads until mf is not equal to zero.
-        for(i = 0; container->payloads->at(i).mf == 1; i++) {
+        for(i = 0; container->payloads->at(i).header.mf == 1; i++) {
             memset(buffer, 0, CFG_PACKET_SIZE);
             // Serialize payload
             serialize_payload(container->payloads->at(i), buffer);
             // send payload per fragment.
-            send(buffer, CFG_PACKET_SIZE);
+            send(buffer, sizeof(payload_t));
         }
         memset(buffer, 0, CFG_PACKET_SIZE);
         // Serialize payload
         serialize_payload(container->payloads->at(i), buffer);
         // send last payload with mf whichs to zero.
-        send(buffer, CFG_PACKET_SIZE);
+        send(buffer, sizeof(payload_t));
     }
     //packet has been sent.
     delete container;
 }
 
 void Client::send(const void* buffer, size_t buffer_size) noexcept {
-    if(::send(conn.m_socket_fd, buffer, buffer_size, MSG_NOSIGNAL) == -1) {
-        BUFFER << LOG_str(Log::WARNING, "input could not be sent towards remote VFS");
-        return;
+    int number_of_bytes = {};
+    size_t bytes_sent = {};
+
+    while(number_of_bytes < buffer_size && (bytes_sent = ::send(conn.m_socket_fd, buffer, buffer_size, MSG_NOSIGNAL))) {
+        number_of_bytes += bytes_sent;
+        buffer += bytes_sent;
+
+        if(bytes_sent == -1) {
+            BUFFER << LOG_str(Log::WARNING, "input could not be sent towards remote VFS");
+            return;
+        }
     }
 }
 
 void Client::receive(size_t bytes) noexcept {
-    char buffer[CFG_PACKET_SIZE];
-    int val = 0;
+    char buffer_[bytes];
+    char* buffer = (char*)buffer_;
+    int number_of_bytes = {};
+    size_t bytes_received = {};
 
-    if((val = recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL)) == -1) {
-        BUFFER << (LOG_str(Log::ERROR_, "Client was unable to read incoming data from mounted server"));
-    } else if (val == 0) {
-        info.state = CFG_SOCK_CLOSE;
-        VFS::get_vfs()->control_vfs({"umnt"});
-        BUFFER << (LOG_str(Log::SERVER, "Disconnected from server"));
-    } else if(val > 0) { 
-        interpret_input(buffer);
+    while(number_of_bytes < bytes && (bytes_received = recv(conn.m_socket_fd, buffer, bytes, MSG_NOSIGNAL)) > 0) {
+        number_of_bytes += bytes_received;
+        buffer += bytes_received;
+
+        if(bytes_received == -1) {
+            BUFFER << (LOG_str(Log::ERROR_, "Client was unable to read incoming data from mounted server"));
+        } else if (bytes_received == 0) {
+            info.state = CFG_SOCK_CLOSE;
+            VFS::get_vfs()->control_vfs({"umnt"});
+            BUFFER << (LOG_str(Log::SERVER, "Disconnected from server"));
+        }
     }
+    interpret_input(buffer_);
 }
 
 void Client::interpret_input(char* segs) noexcept {
@@ -110,27 +124,18 @@ void Client::interpret_input(char* segs) noexcept {
     deserialize_payload(tmp, segs);
     BUFFER << tmp.payload;
 
-    char buffer[CFG_PACKET_SIZE];
-    char buff[CFG_PAYLOAD_SIZE];
-    while(tmp.mf == 0x1) {
-        memset(buffer, 0, CFG_PACKET_SIZE);
-        memset(buff, 0, CFG_PAYLOAD_SIZE);
-        recv(conn.m_socket_fd, buffer, CFG_PACKET_SIZE, 0);
-        deserialize_payload(tmp, buffer);
-
-        strncpy(buff, tmp.payload, tmp.payload_size);
-        BUFFER << buff;
+    if(tmp.header.mf == 0x1) {
+        receive(sizeof(payload_t));
+    } else {   
+        const char* str = BUFFER.retain_buffer();
+        printf("%s", str);
     }
-
-    const char* str = BUFFER.retain_buffer();
-    printf("%s", str);
-
     BUFFER.release_buffer();
 }
 
 void Client::run() noexcept {
     while(info.state == CFG_SOCK_OPEN) {
-        receive();
+        receive(sizeof(payload_t));
     }
 }
 

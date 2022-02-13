@@ -13,14 +13,22 @@ class RFS : public FS {
 
 protected:
     struct packet_t {
+        size_t size;
+        uint32_t p_count;  
         uint8_t cmd;
+        char hash[CFG_PACKET_HASH_SIZE];
         char flags[CFG_FLAGS_BUFFER_SIZE];
-        uint8_t ispl : 1;
+    } __attribute__((packed));
+
+    struct payload_header_t {
+        char hash[CFG_PACKET_HASH_SIZE];
+        uint32_t index;
+        size_t size;
+        uint8_t mf : 1;
     } __attribute__((packed));
 
     struct payload_t {
-        uint8_t mf : 1;
-        int payload_size;
+        payload_header_t header;
         char payload[CFG_PAYLOAD_SIZE];
     } __attribute__((packed));
 

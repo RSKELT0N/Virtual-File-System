@@ -33,6 +33,7 @@
 #define CFG_PACKET_SIZE       (size_t)1024
 #define CFG_FLAGS_BUFFER_SIZE (size_t)50
 #define CFG_PAYLOAD_SIZE      (size_t)250
+#define CFG_PACKET_HASH_SIZE  (size_t)10
 
 // ~~~~~~~~~~~ end ~~~~~~~~~~~~
 

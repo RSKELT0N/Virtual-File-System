@@ -113,10 +113,10 @@ void Server::run() noexcept {
     }
 }
 
-void Server::add_client(const uint32_t& sock, const sockaddr_in& hnt) noexcept {
+void Server::add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept {
     client_t* tmp = (client_t*)malloc(sizeof(client_t));
     tmp->sock_fd = (int)sock;
-    tmp->hint = hnt;
+    tmp->hint = hint;
     tmp->ip = find_ip(tmp->hint).c_str();
     tmp->state = CFG_SOCK_OPEN;
 
@@ -137,30 +137,30 @@ void Server::receive(client_t& client) noexcept {
     // declare container to store info and payload packets.
     pcontainer_t* container = new pcontainer_t;
     // recv info packet and store it within the container info address.
-    recv_(buffer, client);
+    recv_(buffer, client, sizeof(packet_t));
     // deserialize packet.
     deserialize_packet(container->info, buffer);
     // reset buffer array.
     memset(buffer, 0, CFG_PACKET_SIZE);
     // check whether info has any payload.
-    if(container->info.ispl == 0x0)
+    if(container->info.p_count == 0)
         goto no_payload;
 
     // recv first payload.
     payload_t tmp;
-    recv_(buffer, client);
+    recv_(buffer, client, sizeof(payload_t));
     // deserialize payload.
     deserialize_payload(tmp, buffer);
     // push deserialized payload into container.
     container->payloads->push_back(tmp);
 
     // check whether first payload has any mf flag set to 0x1 and then the last 0x0.
-    while(tmp.mf == 0x1) {
+    while(tmp.header.mf == 0x1) {
         // reset buffer array.
         memset(buffer, 0, CFG_PACKET_SIZE);
         memset(tmp.payload, 0, CFG_PAYLOAD_SIZE);
         // recv a payload
-        recv_(buffer, client);
+        recv_(buffer, client, sizeof(payload_t));
 
         deserialize_payload(tmp, buffer);
         container->payloads->push_back(tmp);
@@ -172,9 +172,19 @@ void Server::receive(client_t& client) noexcept {
     delete container;
 }
 
-void Server::send(const char* buffer, client_t& client) noexcept {
-    if(::send(client.sock_fd, buffer, CFG_PACKET_SIZE, MSG_NOSIGNAL) == -1) {
-        BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
+void Server::send(const char* buffer, client_t& client, size_t buffer_size) noexcept {
+    int number_of_bytes = {};
+    size_t bytes_sent = {};
+
+    while(number_of_bytes < buffer_size && (bytes_sent = ::send(client.sock_fd, buffer, buffer_size, MSG_NOSIGNAL))) {
+        number_of_bytes += bytes_sent;
+        buffer += bytes_sent;
+
+
+        if(bytes_sent == -1) {
+            BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
+            return;
+        }
     }
 }
 
@@ -183,7 +193,7 @@ void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
     size_t bytes_received = {};
 
     while(number_of_bytes < bytes && (bytes_received = recv(client.sock_fd, buffer, bytes, MSG_NOSIGNAL)) > 0) {
-        number_of_bytes -= bytes_received;
+        number_of_bytes += bytes_received;
         buffer += bytes_received;
 
         if(bytes_received == -1) {
@@ -193,7 +203,7 @@ void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
             info.users_c--;
             client.state = CFG_SOCK_CLOSE;
             BUFFER << LOG_str(Log::SERVER, "A client has disconnected");
-        } else if(bytes_received > 0) return;
+        }
     }
 }
 
@@ -212,7 +222,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     }
 
     std::string* payload = new std::string();
-    if(container->info.ispl)
+    if(container->info.p_count != 0)
         payload = retain_payloads(*container->payloads);
 
     VFS* tvfs = VFS::get_vfs();
@@ -247,23 +257,23 @@ void Server::send_to_client(client_t& client) noexcept {
 
         payload_t tmp;
         for(int i = 0; i < (amount_of_payloads - 1); i++) {
-            tmp.mf = 0x1;
-            tmp.payload_size = CFG_PAYLOAD_SIZE;
+            tmp.header.mf = 0x1;
+            tmp.header.size = CFG_PAYLOAD_SIZE;
             memcpy(tmp.payload, &(stream[data_read]), CFG_PAYLOAD_SIZE);
             serialize_payload(tmp, buffer);
 
-            send(buffer, client);
+            send(buffer, client, sizeof(payload_t));
             memset(buffer, 0, CFG_PACKET_SIZE);
             data_read += CFG_PAYLOAD_SIZE;
         }
 
         size_t remaining_data = load_size - data_read;
     
-        tmp.mf = 0x0;
-        tmp.payload_size = remaining_data;
+        tmp.header.mf = 0x0;
+        tmp.header.size = remaining_data;
         memcpy(tmp.payload, &(stream[data_read]), remaining_data);
         serialize_payload(tmp, buffer);
-        send(buffer, client);
+        send(buffer, client, sizeof(payload_t));
     } else {
         send(SERVER_REPONSE, client);
     }
