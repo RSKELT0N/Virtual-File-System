@@ -146,22 +146,9 @@ void Server::receive(client_t& client) noexcept {
     if(container->info.p_count == 0)
         goto no_payload;
 
-    // recv first payload.
     payload_t tmp;
-    recv_(buffer, client, sizeof(payload_t));
-    // deserialize payload.
-    deserialize_payload(tmp, buffer);
-
-    if(process_payload(container->info, tmp) == 0) {
-        delete container;
-        return;
-    }
-
-    // push deserialized payload into container.
-    container->payloads->push_back(tmp);
-
     // check whether first payload has any mf flag set to 0x1 and then the last 0x0.
-    while(tmp.header.mf == 0x1) {
+    for(int i = 0; i < container->info.p_count; i++) {
         // reset buffer array.
         memset(buffer, 0, CFG_PACKET_SIZE);
         memset(tmp.payload, 0, CFG_PAYLOAD_SIZE);
@@ -238,7 +225,8 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         payload = retain_payloads(*container->payloads);
     
     const char* stream = BUFFER.retain_buffer();
-    printf("%s\n", stream);
+    if(*stream != '\0')
+        printf("%s", stream);
     BUFFER.release_buffer();
 
     VFS* tvfs = VFS::get_vfs();
@@ -266,7 +254,7 @@ void Server::send_to_client(client_t& client) noexcept {
 
     size_t load_size = strlen(stream);
     std::vector<std::string> flags;
-    pcontainer_t* container;
+    pcontainer_t* container = nullptr;
 
     if(load_size > 0) {
         char buffer[CFG_PACKET_SIZE];
@@ -283,7 +271,9 @@ void Server::send_to_client(client_t& client) noexcept {
     }
 
     delete payload;
-    delete container;
+
+    if(container != nullptr)
+        delete container;
     BUFFER.release_buffer();
 }
 

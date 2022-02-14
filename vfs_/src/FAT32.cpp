@@ -875,12 +875,10 @@ void FAT32::print_fat_table() const noexcept {
     sprintf(buffer, "\n%s%s\n", "    Fat table\n", " --------------");
     for (int i = 0; i < CLUSTER_AMT; i++) {
         if(strlen(buffer) > (1024 * 4)) {
-            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print directory");
-            return;
+            break;
         }
         sprintf(buffer + strlen(buffer), "[%d : 0x%.8x]\n", i, m_fat_table[i]);
     }
-    sprintf(buffer + strlen(buffer), "%s\n%s\n\n", "--------------", "    End");
 
     BUFFER << (buffer);
 }
@@ -900,10 +898,6 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
     sprintf(buffer + strlen(buffer), "\n %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
 
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
-        if(strlen(buffer) > (1024 * 4)) {
-            BUFFER << LOG_str(Log::WARNING, "Buffer size isn't large enough print FAT table");
-            return;
-        }
         sprintf(buffer + strlen(buffer), "%05db%8s%02d%10s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
     }
     sprintf(buffer + strlen(buffer), "-------------------------------");

@@ -153,6 +153,7 @@ void Client::interpret_input(const pcontainer_t& container) noexcept {
         data_copied += container.payloads->at(i).header.size;
     }
 
+    buffer[data_copied] = '\0';
     BUFFER << buffer;
     memset(buffer, 0, payload_size);
     const char* stream = BUFFER.retain_buffer();

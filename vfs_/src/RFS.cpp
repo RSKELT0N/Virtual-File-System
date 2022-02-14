@@ -35,7 +35,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
                 if(load_size % CFG_PAYLOAD_SIZE)
                     amount_of_payloads++;
 
-            if(amount_of_payloads == 0)
+            if(load_size > 0 && load_size < CFG_PAYLOAD_SIZE)
                 amount_of_payloads += 1;
     
             for(int i = 0; i < (amount_of_payloads - 1); i++) {
@@ -175,7 +175,7 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
 uint8_t RFS::process_payload(const packet_t& pckt, const payload_t& pyld) const noexcept {
     uint8_t return_val = 1;
 
-    if(strcmp(pyld.header.hash, pckt.hash) != 0)
+    if(strncmp(pyld.header.hash, pckt.hash, CFG_PACKET_HASH_SIZE) != 0)
         return_val = 0;
 
     if(pyld.header.size > pckt.size)
