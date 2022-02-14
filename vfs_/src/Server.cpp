@@ -151,6 +151,12 @@ void Server::receive(client_t& client) noexcept {
     recv_(buffer, client, sizeof(payload_t));
     // deserialize payload.
     deserialize_payload(tmp, buffer);
+
+    if(process_payload(container->info, tmp) == 0) {
+        delete container;
+        return;
+    }
+
     // push deserialized payload into container.
     container->payloads->push_back(tmp);
 
@@ -163,6 +169,12 @@ void Server::receive(client_t& client) noexcept {
         recv_(buffer, client, sizeof(payload_t));
 
         deserialize_payload(tmp, buffer);
+
+        if(process_payload(container->info, tmp) == 0) {
+            delete container;
+            return;
+        }
+
         container->payloads->push_back(tmp);
     }
 
@@ -224,9 +236,14 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     std::string* payload = new std::string();
     if(container->info.p_count != 0)
         payload = retain_payloads(*container->payloads);
+    
+    const char* stream = BUFFER.retain_buffer();
+    printf("%s\n", stream);
+    BUFFER.release_buffer();
 
     VFS* tvfs = VFS::get_vfs();
 
+    BUFFER.hold_buffer();
     if(tvfs->is_mnted())
         (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload->c_str());
     else BUFFER << LOG_str(Log::WARNING, "Server does not have a system mounted");
@@ -244,40 +261,29 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 
 void Server::send_to_client(client_t& client) noexcept {
     const char* stream = BUFFER.retain_buffer();
+    std::string* payload = new std::string();
+    *payload = stream;
+
     size_t load_size = strlen(stream);
+    std::vector<std::string> flags;
+    pcontainer_t* container;
 
-    if(*stream != '\0') {
+    if(load_size > 0) {
         char buffer[CFG_PACKET_SIZE];
-        size_t data_read = {};
-        int amount_of_payloads = load_size / CFG_PAYLOAD_SIZE;
+        memset(buffer, 0, CFG_PACKET_SIZE);
+        container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, *payload);
+        serialize_packet(container->info, buffer);
+        send(buffer, client, sizeof(packet_t));
 
-        if(load_size > CFG_PAYLOAD_SIZE)
-            if(load_size % CFG_PAYLOAD_SIZE)
-                amount_of_payloads++;
-
-        payload_t tmp;
-        for(int i = 0; i < (amount_of_payloads - 1); i++) {
-            tmp.header.mf = 0x1;
-            tmp.header.size = CFG_PAYLOAD_SIZE;
-            memcpy(tmp.payload, &(stream[data_read]), CFG_PAYLOAD_SIZE);
-            serialize_payload(tmp, buffer);
-
-            send(buffer, client, sizeof(payload_t));
+        for(int i = 0; i < container->info.p_count; i++) {
             memset(buffer, 0, CFG_PACKET_SIZE);
-            data_read += CFG_PAYLOAD_SIZE;
+            serialize_payload(container->payloads->at(i), buffer);
+            send(buffer, client, sizeof(payload_t));
         }
-
-        size_t remaining_data = load_size - data_read;
-    
-        tmp.header.mf = 0x0;
-        tmp.header.size = remaining_data;
-        memcpy(tmp.payload, &(stream[data_read]), remaining_data);
-        serialize_payload(tmp, buffer);
-        send(buffer, client, sizeof(payload_t));
-    } else {
-        send(SERVER_REPONSE, client);
     }
 
+    delete payload;
+    delete container;
     BUFFER.release_buffer();
 }
 

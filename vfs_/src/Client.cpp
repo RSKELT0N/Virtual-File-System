@@ -61,27 +61,18 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     send(buffer, sizeof(packet_t));
 
     int i;
-    // checking if payload flag is set
-    if(container->info.p_count) {
-        // looping through payloads until mf is not equal to zero.
-        for(i = 0; container->payloads->at(i).header.mf == 1; i++) {
-            memset(buffer, 0, CFG_PACKET_SIZE);
-            // Serialize payload
-            serialize_payload(container->payloads->at(i), buffer);
-            // send payload per fragment.
-            send(buffer, sizeof(payload_t));
-        }
+    for(i = 0; i < container->info.p_count; i++) {
         memset(buffer, 0, CFG_PACKET_SIZE);
         // Serialize payload
         serialize_payload(container->payloads->at(i), buffer);
-        // send last payload with mf whichs to zero.
+        // send payload per fragment.
         send(buffer, sizeof(payload_t));
     }
     //packet has been sent.
     delete container;
 }
 
-void Client::send(const void* buffer, size_t buffer_size) noexcept {
+void Client::send(const char* buffer, size_t buffer_size) noexcept {
     int number_of_bytes = {};
     size_t bytes_sent = {};
 
@@ -96,9 +87,7 @@ void Client::send(const void* buffer, size_t buffer_size) noexcept {
     }
 }
 
-void Client::receive(size_t bytes) noexcept {
-    char buffer_[bytes];
-    char* buffer = (char*)buffer_;
+uint8_t Client::receive(char* buffer, size_t bytes) noexcept {
     int number_of_bytes = {};
     size_t bytes_received = {};
 
@@ -107,35 +96,73 @@ void Client::receive(size_t bytes) noexcept {
         buffer += bytes_received;
 
         if(bytes_received == -1) {
-            BUFFER << (LOG_str(Log::ERROR_, "Client was unable to read incoming data from mounted server"));
+            BUFFER << (LOG_str(Log::WARNING, "Client was unable to read incoming data from mounted server"));
+            return -1;
         } else if (bytes_received == 0) {
             info.state = CFG_SOCK_CLOSE;
             VFS::get_vfs()->control_vfs({"umnt"});
             BUFFER << (LOG_str(Log::SERVER, "Disconnected from server"));
+            return 0;
         }
     }
-    interpret_input(buffer_);
+    return 1;
 }
 
-void Client::interpret_input(char* segs) noexcept {
+void Client::receive_from_server() noexcept {
+    char buffer[CFG_PACKET_SIZE];
+    memset(buffer, 0, CFG_PACKET_SIZE);
+
+    if(receive(buffer, sizeof(packet_t)) < 1)
+        return;
+        
+    pcontainer_t* container = new pcontainer_t;
+    deserialize_packet(container->info, buffer);
+    
+    payload_t tmp_payload;
+    for(int i = 0; i < container->info.p_count; i++) {
+        memset(buffer, 0, CFG_PACKET_SIZE);
+        receive(buffer, sizeof(payload_t));
+        deserialize_payload(tmp_payload, buffer);
+        
+        if(process_payload(container->info, tmp_payload) == 0) {
+            return;
+            delete container;
+        }
+
+        container->payloads->push_back(tmp_payload);
+    }
+
+    interpret_input(*container);
+    delete container;
+}
+
+void Client::interpret_input(const pcontainer_t& container) noexcept {
     BUFFER.hold_buffer();
 
-    payload_t tmp;
-    deserialize_payload(tmp, segs);
-    BUFFER << tmp.payload;
+    size_t payload_size = 0;
 
-    if(tmp.header.mf == 0x1) {
-        receive(sizeof(payload_t));
-    } else {   
-        const char* str = BUFFER.retain_buffer();
-        printf("%s", str);
+    for(int i = 0; i < container.info.p_count; i++)
+        payload_size += container.payloads->at(i).header.size;
+
+    char buffer[payload_size];
+    memset(buffer, 0, payload_size);
+
+    size_t data_copied = 0;
+    for(int i = 0; i < container.info.p_count; i++) {
+        memcpy(&(buffer[data_copied]), container.payloads->at(i).payload, container.payloads->at(i).header.size);
+        data_copied += container.payloads->at(i).header.size;
     }
+
+    BUFFER << buffer;
+    memset(buffer, 0, payload_size);
+    const char* stream = BUFFER.retain_buffer();
+    printf("%s\n", stream);
     BUFFER.release_buffer();
 }
 
 void Client::run() noexcept {
     while(info.state == CFG_SOCK_OPEN) {
-        receive(sizeof(payload_t));
+        receive_from_server();
     }
 }
 

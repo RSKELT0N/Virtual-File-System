@@ -56,7 +56,8 @@ protected:
     void deserialize_packet(packet_t&, char*) noexcept;
 
     void serialize_payload(payload_t&, char*) noexcept;
-    void deserialize_payload(payload_t&, char*) noexcept;   
+    void deserialize_payload(payload_t&, char*) noexcept;
+    uint8_t process_payload(const packet_t&, const payload_t&) const noexcept;
 
     void print_packet(const packet_t&) const noexcept;
     void print_payload(const payload_t&) const noexcept;

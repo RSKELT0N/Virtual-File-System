@@ -39,8 +39,9 @@ public:
     Client(const Client&) = delete;
 
 public:
-    void receive(size_t bytes = CFG_PACKET_SIZE) noexcept;
-    void send(const void*, size_t) noexcept;
+    void receive_from_server() noexcept;
+    uint8_t receive(char* buffer, size_t bytes = CFG_PACKET_SIZE) noexcept;
+    void send(const char*, size_t = CFG_PACKET_SIZE) noexcept;
     std::string get_payload(const char*, std::vector<std::string>&) noexcept;
     void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
 
@@ -52,7 +53,7 @@ private:
 
 private:
     void connect() noexcept;
-    void interpret_input(char*) noexcept;
+    void interpret_input(const pcontainer_t&) noexcept;
 
 private:
     std::thread recv_;

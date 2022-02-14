@@ -34,7 +34,8 @@ public:
         touch,
         cp,
         mv,
-        cat
+        cat,
+        internal
     };
 
     static constexpr const char* syscmd_str[] = {"vfs", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
