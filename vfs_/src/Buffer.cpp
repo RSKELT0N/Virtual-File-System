@@ -45,6 +45,7 @@ void Buffer::release_buffer() noexcept {
 }
 
 const char* Buffer::retain_buffer() noexcept {
+    mStream.insert(0, "\r");
     return mStream.c_str();
 }
 

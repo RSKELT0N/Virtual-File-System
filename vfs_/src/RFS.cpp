@@ -64,7 +64,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
             data_read += load_size - data_read;
         }
-
+        memcpy(con->info.signature, CFG_PACKET_SIGNATURE, CFG_PACKET_SIGNATURE_SIZE);
         con->info.cmd = cmd;
         memcpy(con->info.flags, flags.c_str(), CFG_FLAGS_BUFFER_SIZE);
         con->info.p_count = amount_of_payloads;
@@ -85,8 +85,17 @@ std::string* RFS::retain_payloads(std::vector<payload_t>& pylds) noexcept {
 }
 
 void RFS::serialize_packet(packet_t& pckt, char* buffer) noexcept {
+    // Store signature.
+    char* sign_p = (char*)buffer;
+    int sign_c = 0;
+
+    while(sign_c < CFG_PACKET_SIGNATURE_SIZE) {
+        *sign_p = pckt.signature[sign_c];
+        sign_p++;
+        sign_c++;
+    }
     // Store size.
-    size_t* size_p = (size_t*)buffer;
+    size_t* size_p = (size_t*)sign_p;
     *size_p = pckt.size; size_p++;
     // Store p count.
     uint32_t* p_count_p = (uint32_t*)size_p;
@@ -114,8 +123,17 @@ void RFS::serialize_packet(packet_t& pckt, char* buffer) noexcept {
 }
 
 void RFS::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
+    // Store signature.
+    char* sign_p = (char*)buffer;
+    int sign_c = 0;
+
+    while(sign_c < CFG_PACKET_SIGNATURE_SIZE) {
+        pckt.signature[sign_c] = *sign_p;
+        sign_p++;
+        sign_c++;
+    }
     // Store size into struct.
-    size_t* size_p = (size_t*)buffer;
+    size_t* size_p = (size_t*)sign_p;
     pckt.size = *size_p; size_p++;
     // Store p count.
     uint32_t* p_count_p = (uint32_t*)size_p;
@@ -185,6 +203,21 @@ uint8_t RFS::process_payload(const packet_t& pckt, const payload_t& pyld) const 
         return_val = 0;
 
     
+    return return_val;
+}
+
+uint8_t RFS::process_packet(const packet_t& pckt) const noexcept {
+    uint8_t return_val = 1;
+
+    if(strncmp(pckt.signature, CFG_PACKET_SIGNATURE, CFG_PACKET_SIGNATURE_SIZE) != 0)
+        return_val = 0;
+    
+    if(pckt.size < (pckt.p_count * sizeof(payload_t)))
+        return_val = 0;
+    
+    if(pckt.p_count > (pckt.size / sizeof(payload_t)))
+        return_val = 0;
+
     return return_val;
 }
 

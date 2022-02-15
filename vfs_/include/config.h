@@ -21,19 +21,22 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_USER_SPACE_SIZE    MB(200)
-#define CFG_CLUSTER_SIZE       KB(2)
+#define CFG_USER_SPACE_SIZE       MB(200)
+#define CFG_CLUSTER_SIZE          KB(2)
 
 // RFS
-#define CFG_SOCK_OPEN         (uint8_t)1
-#define CFG_SOCK_CLOSE        (uint8_t)0
-#define CFG_DEFAULT_PORT      (uint32_t)60000
-#define CFG_SOCK_LISTEN_AMT   (uint32_t)5
+#define CFG_SOCK_OPEN             (uint8_t)1
+#define CFG_SOCK_CLOSE            (uint8_t)0
+#define CFG_DEFAULT_PORT          (uint32_t)60000
+#define CFG_SOCK_LISTEN_AMT       (uint32_t)5
 
-#define CFG_PACKET_SIZE       (size_t)1024
-#define CFG_FLAGS_BUFFER_SIZE (size_t)50
-#define CFG_PAYLOAD_SIZE      (size_t)250
-#define CFG_PACKET_HASH_SIZE  (size_t)10
+#define CFG_PACKET_SIGNATURE      (char*)"[_VFS_]\0"
+#define CFG_PACKET_SIGNATURE_SIZE (strlen(CFG_PACKET_SIGNATURE))
+#define CFG_PACKET_SIZE           (size_t)1024
+#define CFG_FLAGS_BUFFER_SIZE     (size_t)50
+#define CFG_PAYLOAD_SIZE          (size_t)250
+#define CFG_PACKET_HASH_SIZE      (size_t)10
+#define CFG_INVALID_PROTOCOL      LOG_str(Log::SERVER, "Invalid protocol, closing connection..")
 
 // ~~~~~~~~~~~ end ~~~~~~~~~~~~
 

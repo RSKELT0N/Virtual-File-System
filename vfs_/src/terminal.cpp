@@ -31,16 +31,12 @@ terminal::~terminal() {
 void terminal::run() noexcept {
     std::string line;
 
-    BUFFER << "-------------------------------------------------";
+    BUFFER << "-------------------------------------------------\n";
 
     while(1) {
         const char* str = BUFFER.retain_buffer();
 
-        if(*str == '\0')
-            printf("%s", "-> ");
-        else {
-            printf("%s\n-> ", str);
-        }
+        printf("%s%s", str, ">> ");
         BUFFER.release_buffer();
 
         std::getline(std::cin, line);

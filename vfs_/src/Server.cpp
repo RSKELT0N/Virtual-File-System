@@ -108,7 +108,7 @@ void Server::run() noexcept {
 
             info.users_c++;
             add_client(socket, client);
-            BUFFER << LOG_str(Log::SERVER, "Client has joined");
+            BUFFER << LOG_str(Log::SERVER, "Client: [" + find_ip(client) + "] has joined");
         }
     }
 }
@@ -129,6 +129,7 @@ void Server::handle(client_t* client) noexcept {
     while(info.state == CFG_SOCK_OPEN && client->state == CFG_SOCK_OPEN) {
         receive(*client);
     }
+    BUFFER << LOG_str(Log::SERVER, "Client [" + find_ip(client->hint) + "] disconnected");
 }
 
 void Server::receive(client_t& client) noexcept {
@@ -140,6 +141,13 @@ void Server::receive(client_t& client) noexcept {
     recv_(buffer, client, sizeof(packet_t));
     // deserialize packet.
     deserialize_packet(container->info, buffer);
+
+    if(process_packet(container->info) == 0) {
+        ::send(client.sock_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+        client.state = CFG_SOCK_CLOSE;
+        delete container;
+        return;
+    }
     // reset buffer array.
     memset(buffer, 0, CFG_PACKET_SIZE);
     // check whether info has any payload.
@@ -158,6 +166,8 @@ void Server::receive(client_t& client) noexcept {
         deserialize_payload(tmp, buffer);
 
         if(process_payload(container->info, tmp) == 0) {
+            ::send(client.sock_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+            client.state = CFG_SOCK_CLOSE;
             delete container;
             return;
         }
@@ -213,7 +223,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     VFS::system_cmd cmd = (VFS::system_cmd)container->info.cmd;
 
     if(cmd == VFS::system_cmd::cp) {
-        if(strcmp(args[0].c_str(), "ext") == 0) {
+        if(strcmp(args[0].c_str(), "import") == 0) {
             args.erase(args.begin());
             args.erase(args.begin());
             cmd = VFS::system_cmd::touch;

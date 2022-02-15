@@ -117,6 +117,13 @@ void Client::receive_from_server() noexcept {
         
     pcontainer_t* container = new pcontainer_t;
     deserialize_packet(container->info, buffer);
+
+    if(process_packet(container->info) == 0) {
+        ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+        info.state = CFG_SOCK_CLOSE;
+        delete container;
+        return;
+    }
     
     payload_t tmp_payload;
     for(int i = 0; i < container->info.p_count; i++) {
@@ -125,8 +132,10 @@ void Client::receive_from_server() noexcept {
         deserialize_payload(tmp_payload, buffer);
         
         if(process_payload(container->info, tmp_payload) == 0) {
-            return;
+            ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+            info.state = CFG_SOCK_CLOSE;
             delete container;
+            return;
         }
 
         container->payloads->push_back(tmp_payload);

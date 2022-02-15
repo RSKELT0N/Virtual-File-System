@@ -13,6 +13,7 @@ class RFS : public FS {
 
 protected:
     struct packet_t {
+        char signature[CFG_PACKET_SIGNATURE_SIZE];
         size_t size;
         uint32_t p_count;  
         uint8_t cmd;
@@ -54,6 +55,7 @@ public:
 protected:
     void serialize_packet(packet_t&, char*) noexcept;
     void deserialize_packet(packet_t&, char*) noexcept;
+    uint8_t process_packet(const packet_t&) const noexcept;
 
     void serialize_payload(payload_t&, char*) noexcept;
     void deserialize_payload(payload_t&, char*) noexcept;

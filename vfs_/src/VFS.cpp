@@ -259,7 +259,7 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
         case VFS::system_cmd::mv:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mv(args));               break;
         case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));   break;
 
-        case VFS::system_cmd::cp:    if(args[0] == "ext") 
+        case VFS::system_cmd::cp:    if(args[0] == "import") 
                                         (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_ext(args[1].c_str(), args[2].c_str()));
                                     else (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp(args[0].c_str(), args[1].c_str())); break;
         default: break;
