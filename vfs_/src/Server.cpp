@@ -135,6 +135,7 @@ void Server::handle(client_t* client) noexcept {
 void Server::receive(client_t& client) noexcept {
     int val = 0;
     char buffer[CFG_PACKET_SIZE];
+    memset(buffer, 0, CFG_PACKET_SIZE);
     // declare container to store info and payload packets.
     pcontainer_t* container = new pcontainer_t;
     // recv info packet and store it within the container info address.
@@ -185,7 +186,7 @@ void Server::send(const char* buffer, client_t& client, size_t buffer_size) noex
     int number_of_bytes = {};
     size_t bytes_sent = {};
 
-    while(number_of_bytes < buffer_size && (bytes_sent = ::send(client.sock_fd, buffer, buffer_size, MSG_NOSIGNAL))) {
+    while(number_of_bytes < buffer_size && (bytes_sent = ::send(client.sock_fd, buffer, (buffer_size - number_of_bytes), MSG_NOSIGNAL))) {
         number_of_bytes += bytes_sent;
         buffer += bytes_sent;
 
@@ -201,7 +202,7 @@ void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
     int number_of_bytes = {};
     size_t bytes_received = {};
 
-    while(number_of_bytes < bytes && (bytes_received = recv(client.sock_fd, buffer, bytes, MSG_NOSIGNAL)) > 0) {
+    while(number_of_bytes < bytes && (bytes_received = recv(client.sock_fd, buffer, (bytes - number_of_bytes), MSG_NOSIGNAL)) > 0) {
         number_of_bytes += bytes_received;
         buffer += bytes_received;
 
@@ -223,7 +224,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     VFS::system_cmd cmd = (VFS::system_cmd)container->info.cmd;
 
     if(cmd == VFS::system_cmd::cp) {
-        if(strcmp(args[0].c_str(), "import") == 0) {
+        if(strcmp(args[0].c_str(), "imp") == 0) {
             args.erase(args.begin());
             args.erase(args.begin());
             cmd = VFS::system_cmd::touch;

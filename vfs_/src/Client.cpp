@@ -76,7 +76,7 @@ void Client::send(const char* buffer, size_t buffer_size) noexcept {
     int number_of_bytes = {};
     size_t bytes_sent = {};
 
-    while(number_of_bytes < buffer_size && (bytes_sent = ::send(conn.m_socket_fd, buffer, buffer_size, MSG_NOSIGNAL))) {
+    while(number_of_bytes < buffer_size && (bytes_sent = ::send(conn.m_socket_fd, buffer, (buffer_size - number_of_bytes), MSG_NOSIGNAL))) {
         number_of_bytes += bytes_sent;
         buffer += bytes_sent;
 
@@ -91,7 +91,7 @@ uint8_t Client::receive(char* buffer, size_t bytes) noexcept {
     int number_of_bytes = {};
     size_t bytes_received = {};
 
-    while(number_of_bytes < bytes && (bytes_received = recv(conn.m_socket_fd, buffer, bytes, MSG_NOSIGNAL)) > 0) {
+    while(number_of_bytes < bytes && (bytes_received = recv(conn.m_socket_fd, buffer, (bytes - number_of_bytes), MSG_NOSIGNAL)) > 0) {
         number_of_bytes += bytes_received;
         buffer += bytes_received;
 
@@ -180,7 +180,7 @@ std::string Client::get_payload(const char* cmd, std::vector<std::string>& args)
     std::string payload = "";
 
     if(strcmp(cmd, "cp") == 0) {
-        if(strcmp(args[0].c_str(), "ext") == 0)
+        if(strcmp(args[0].c_str(), "imp") == 0)
             payload = FS::get_ext_file_buffer(args[1].c_str());
     }
 
