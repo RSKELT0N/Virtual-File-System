@@ -28,9 +28,10 @@ public:
     const char* retain_buffer() noexcept;
    
 private:
-    std::string mStream;
     std::mutex* mLock;
     static Buffer* mBuf_p;
+public:
+    std::string mStream;
 };
 
 

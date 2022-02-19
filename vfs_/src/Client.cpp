@@ -51,8 +51,12 @@ void Client::connect() noexcept {
 }
 
 void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::string>& args) noexcept {
-    std::string payload = get_payload(str_cmd, args);
-    pcontainer_t* container = generate_container(cmd, args, payload);
+
+    char** payload = (char**)malloc(sizeof(char*));
+    *payload = nullptr;
+    get_payload(str_cmd, args, *payload);
+    pcontainer_t* container = generate_container(cmd, args, *payload);
+    free(payload);
     // Serialize packet.
     char buffer[CFG_PACKET_SIZE];
     memset(buffer, 0, CFG_PACKET_SIZE);
@@ -148,15 +152,15 @@ void Client::receive_from_server() noexcept {
 void Client::interpret_input(const pcontainer_t& container) noexcept {
     BUFFER.hold_buffer();
 
-    size_t payload_size = 0;
+    uint64_t payload_size = 0;
 
     for(int i = 0; i < container.info.p_count; i++)
         payload_size += container.payloads->at(i).header.size;
 
-    char buffer[payload_size];
+    char* buffer = (char*)malloc(sizeof(char) * payload_size);
     memset(buffer, 0, payload_size);
 
-    size_t data_copied = 0;
+    uint64_t data_copied = 0;
     for(int i = 0; i < container.info.p_count; i++) {
         memcpy(&(buffer[data_copied]), container.payloads->at(i).payload, container.payloads->at(i).header.size);
         data_copied += container.payloads->at(i).header.size;
@@ -165,6 +169,8 @@ void Client::interpret_input(const pcontainer_t& container) noexcept {
     buffer[data_copied] = '\0';
     BUFFER << buffer;
     memset(buffer, 0, payload_size);
+    free(buffer);
+
     const char* stream = BUFFER.retain_buffer();
     printf("%s\n", stream);
     BUFFER.release_buffer();
@@ -176,13 +182,14 @@ void Client::run() noexcept {
     }
 }
 
-std::string Client::get_payload(const char* cmd, std::vector<std::string>& args) noexcept {
-    std::string payload = "";
-
+void Client::get_payload(const char* cmd, std::vector<std::string>& args, char*& payload) noexcept {
     if(strcmp(cmd, "cp") == 0) {
         if(strcmp(args[0].c_str(), "imp") == 0)
-            payload = FS::get_ext_file_buffer(args[1].c_str());
+            FS::get_ext_file_buffer(args[1].c_str(), payload);
     }
 
-    return payload;
+    if(payload == nullptr) {
+        payload = (char*)malloc(sizeof(char));
+        *payload = '\0';
+    }
 }

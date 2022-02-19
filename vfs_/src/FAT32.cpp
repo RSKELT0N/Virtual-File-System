@@ -4,7 +4,7 @@ extern std::vector<std::string> split(const char* line, char sep) noexcept;
 
 IFS::IFS() = default;
 const uint32_t FAT32::CLUSTER_SIZE;
-const uint32_t FAT32::CLUSTER_AMT;
+const uint64_t FAT32::CLUSTER_AMT;
 
 FAT32::FAT32(const char* disk_name) {
     if (disk_name[0] == '\0')
@@ -350,18 +350,19 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
     return ret;
 }
 
-std::string FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
+char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
     dir_entry_t* entry_ptr = find_entry(dir, entry_name, 1);
+    uint64_t entry_size = entry_ptr->dir_entry_size;
+    char* buffer = (char*)malloc(sizeof(char) * entry_size);
+    memset(buffer, '\0', entry_size);
 
     if (m_fat_table[entry_ptr->start_cluster_index] == UNALLOCATED_CLUSTER) {
         BUFFER << (LOG_str(Log::WARNING, "cluster specified has not been allocated, file could not be read"));
-        return "";
+        return buffer;
     }
 
-    uint32_t amt_of_clu_used = 0;
-    size_t entry_size = entry_ptr->dir_entry_size;
-    char buffer[entry_size];
-    uint32_t data_read = 0;
+    uint64_t amt_of_clu_used = 0;
+    uint64_t data_read = 0;
 
     if (entry_size <= CLUSTER_SIZE)
         amt_of_clu_used = 1;
@@ -382,10 +383,10 @@ std::string FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
         return buffer;
     }
 
-    uint32_t curr_clu = entry_ptr->start_cluster_index;
+    uint64_t curr_clu = entry_ptr->start_cluster_index;
 
     for (int i = 0; i < amt_of_clu_used - 1; i++) {
-        size_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
+        uint64_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
 
         m_disk->seek(addr_offset);
         m_disk->read(buffer + data_read, sizeof(char), CLUSTER_SIZE);
@@ -490,16 +491,20 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
         return;
     }
 
-    std::string buffer = get_ext_file_buffer(path);
-    uint32_t start_clu = store_file(buffer.c_str());
+    char** buffer = (char**)malloc(sizeof(char*));
+    *buffer = nullptr;
+
+    get_ext_file_buffer(path, *buffer);
+    uint32_t start_clu = store_file(*buffer);
 
     if (start_clu == -1) {
         BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));
         return;
     }
 
-    add_new_entry(curr_dir, name, start_clu, buffer.size(), 0);
+    add_new_entry(curr_dir, name, start_clu, strlen(*buffer), 0);
     save_dir(curr_dir);
+    free(buffer);
 }
 
 void FAT32::delete_entry(dir_entr_ret_t& entry) noexcept {
@@ -819,9 +824,10 @@ void FAT32::cat(const char* path) noexcept {
         return;
     }
 
-    std::string buffer = read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str());
+    char* buffer = &(*read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str()));
     std::string file_name = tokens[tokens.size() - 1];
-    BUFFER << "\nFile: " << file_name.c_str() << "\nSize: " << buffer.size() << "b\n------------\n" << buffer.c_str() << "\n";
+    BUFFER << "\nFile: " << file_name.c_str() << "\nSize: " << strlen(buffer) << "b\n------------\n" << buffer << "\n";
+    free(buffer);
 }
 
 void FAT32::ls() noexcept {

@@ -21,7 +21,7 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_USER_SPACE_SIZE       MB(200)
+#define CFG_USER_SPACE_SIZE       GB(2)
 #define CFG_CLUSTER_SIZE          KB(2)
 
 // RFS

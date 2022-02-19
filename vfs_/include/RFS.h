@@ -14,8 +14,8 @@ class RFS : public FS {
 protected:
     struct packet_t {
         char signature[CFG_PACKET_SIGNATURE_SIZE];
-        size_t size;
-        uint32_t p_count;  
+        uint64_t size;
+        uint64_t p_count;  
         uint8_t cmd;
         char hash[CFG_PACKET_HASH_SIZE];
         char flags[CFG_FLAGS_BUFFER_SIZE];
@@ -23,8 +23,8 @@ protected:
 
     struct payload_header_t {
         char hash[CFG_PACKET_HASH_SIZE];
-        uint32_t index;
-        size_t size;
+        uint64_t index;
+        uint64_t size;
         uint8_t mf : 1;
     } __attribute__((packed));
 
@@ -66,7 +66,7 @@ protected:
 
 public:
     std::string* retain_payloads(std::vector<payload_t>&) noexcept;
-    pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, std::string payload) noexcept;
+    pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, char*& payload) noexcept;
 };
 
 #endif // _RFS_H_

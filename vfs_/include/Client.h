@@ -42,7 +42,7 @@ public:
     void receive_from_server() noexcept;
     uint8_t receive(char* buffer, size_t bytes = CFG_PACKET_SIZE) noexcept;
     void send(const char*, size_t = CFG_PACKET_SIZE) noexcept;
-    std::string get_payload(const char*, std::vector<std::string>&) noexcept;
+    void get_payload(const char*, std::vector<std::string>&, char*&) noexcept;
     void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
 
 private:

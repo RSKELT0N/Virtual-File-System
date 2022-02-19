@@ -11,7 +11,7 @@ char* generate_hash() noexcept {
     return hash;
 }
 
-RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>& args, std::string payload) noexcept {
+RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>& args, char*& payload) noexcept {
         pcontainer_t* con = new pcontainer_t;
         char* hash = generate_hash();
         memcpy(con->info.hash, hash, CFG_PACKET_HASH_SIZE);
@@ -24,8 +24,8 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
 
         flags[flags.size() - 1] = '\0';
         
-        size_t load_size = payload.size();
-        int amount_of_payloads = 0;
+        uint64_t load_size = strlen(payload);
+        uint64_t amount_of_payloads = 0;
 
         if(load_size > 0) {
             size_t data_read = {};
@@ -38,7 +38,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
             if(load_size > 0 && load_size < CFG_PAYLOAD_SIZE)
                 amount_of_payloads += 1;
     
-            for(int i = 0; i < (amount_of_payloads - 1); i++) {
+            for(int i = 0; (uint64_t)i < (amount_of_payloads - 1); i++) {
                 payload_t tmp;
                 memcpy(tmp.header.hash, con->info.hash, CFG_PACKET_HASH_SIZE);
                 tmp.header.size = CFG_PAYLOAD_SIZE;
@@ -51,7 +51,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
                 data_read += CFG_PAYLOAD_SIZE;
             }
 
-            size_t remaining_data = load_size - data_read;
+            uint64_t remaining_data = load_size - data_read;
 
             payload_t final;
             memcpy(final.header.hash, con->info.hash, CFG_PACKET_HASH_SIZE);
@@ -95,10 +95,10 @@ void RFS::serialize_packet(packet_t& pckt, char* buffer) noexcept {
         sign_c++;
     }
     // Store size.
-    size_t* size_p = (size_t*)sign_p;
+    uint64_t* size_p = (uint64_t*)sign_p;
     *size_p = pckt.size; size_p++;
     // Store p count.
-    uint32_t* p_count_p = (uint32_t*)size_p;
+    uint64_t* p_count_p = (uint64_t*)size_p;
     *p_count_p = pckt.p_count; p_count_p++;
     // Store cmd int.
     uint8_t* int_p = (uint8_t*)p_count_p;
@@ -133,10 +133,10 @@ void RFS::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
         sign_c++;
     }
     // Store size into struct.
-    size_t* size_p = (size_t*)sign_p;
+    uint64_t* size_p = (uint64_t*)sign_p;
     pckt.size = *size_p; size_p++;
     // Store p count.
-    uint32_t* p_count_p = (uint32_t*)size_p;
+    uint64_t* p_count_p = (uint64_t*)size_p;
     pckt.p_count = *p_count_p; p_count_p++;
     // Store cmd into struct.
     uint8_t* int_p = (uint8_t*)p_count_p;
@@ -168,7 +168,7 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)header_p;
     int pyld_c = 0;
 
-    while(pyld_c < CFG_PAYLOAD_SIZE) {
+    while(pyld_c < pyld.header.size) {
         *char_p = pyld.payload[pyld_c];
         char_p++;
         pyld_c++;
@@ -183,7 +183,7 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)header_p;
     int pyld_c = 0;
 
-    while(pyld_c < CFG_PAYLOAD_SIZE) {
+    while(pyld_c < pyld.header.size) {
         pyld.payload[pyld_c] = *char_p;
         char_p++;
         pyld_c++;

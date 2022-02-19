@@ -9,11 +9,11 @@
 
 #define abs_(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
 #define min_(a,b)            ((a) < (b) ? (a) : (b))
-#define DISK_NAME_LENGTH    (uint8_t)10
-#define DIR_NAME_LENGTH     (uint8_t)10
-#define UNDEF_START_CLUSTER 0
-#define DIRECTORY           1
-#define NON_DIRECTORY       0
+#define DISK_NAME_LENGTH     (uint8_t)10
+#define DIR_NAME_LENGTH      (uint8_t)10
+#define UNDEF_START_CLUSTER  0
+#define DIRECTORY            1
+#define NON_DIRECTORY        0
 
 
 class FAT32 : public IFS {
@@ -30,10 +30,10 @@ private:
 
     struct metadata_t {
         char disk_name[DISK_NAME_LENGTH];
-        uint32_t disk_size;
+        int64_t disk_size;
         uint32_t superblock_size;
-        uint32_t fat_table_size;
-        uint32_t user_size;
+        uint64_t fat_table_size;
+        int64_t user_size;
         uint32_t cluster_size;
         uint32_t cluster_n;
     } __attribute__((packed));
@@ -122,7 +122,7 @@ private:
     void cp_dir(dir_t& src, dir_t& dst) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
-    std::string read_file(dir_t& dir, const char* entry_name) noexcept;
+    char* read_file(dir_t& dir, const char* entry_name) noexcept;
 
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
@@ -145,9 +145,9 @@ private:
 
     static constexpr uint64_t USER_SPACE   = CFG_USER_SPACE_SIZE;
     static constexpr uint32_t CLUSTER_SIZE = CFG_CLUSTER_SIZE;
-    static constexpr uint32_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
+    static constexpr uint64_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr uint32_t STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr uint64_t  STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
     static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
     static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;

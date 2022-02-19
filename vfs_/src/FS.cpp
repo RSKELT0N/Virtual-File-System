@@ -5,20 +5,18 @@ FILE* FS::get_file_handlr(const char* file) noexcept {
     return handlr;
 }
 
-std::string FS::get_ext_file_buffer(const char* path) noexcept {
+void FS::get_ext_file_buffer(const char* path, char*& payload) noexcept {
     FILE* file = get_file_handlr(path);
 
     if(file == NULL) {
-        return (char*)"";
+        return;
     }
 
     fseek(file, 0, SEEK_END);
-    size_t fsize = ftell(file);
+    uint64_t fsize = ftell(file);
     rewind(file);
 
-    char buffer[fsize];
-    fread(buffer, sizeof(char), fsize, file);
+    payload = (char*)malloc(sizeof(char) * fsize);
+    fread(payload, sizeof(char), fsize, file);
     fclose(file);
-
-    return std::string(buffer);
 }

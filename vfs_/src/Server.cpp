@@ -232,8 +232,10 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     }
 
     std::string* payload = new std::string();
-    if(container->info.p_count != 0)
+    if(container->info.p_count != 0) {
+        delete payload;
         payload = retain_payloads(*container->payloads);
+    }
     
     const char* stream = BUFFER.retain_buffer();
     if(*stream != '\0')
@@ -259,18 +261,17 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 }
 
 void Server::send_to_client(client_t& client) noexcept {
-    const char* stream = BUFFER.retain_buffer();
-    std::string* payload = new std::string();
-    *payload = stream;
+    uint64_t buffer_size = BUFFER.mStream.size();
+    char* stream = (char*)malloc(sizeof(char) * buffer_size);
+    memcpy(stream, BUFFER.retain_buffer(), buffer_size);
 
-    size_t load_size = strlen(stream);
     std::vector<std::string> flags;
     pcontainer_t* container = nullptr;
 
-    if(load_size > 0) {
+    if(buffer_size > 0) {
         char buffer[CFG_PACKET_SIZE];
         memset(buffer, 0, CFG_PACKET_SIZE);
-        container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, *payload);
+        container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, const_cast<char*&>(stream));
         serialize_packet(container->info, buffer);
         send(buffer, client, sizeof(packet_t));
 
@@ -281,7 +282,7 @@ void Server::send_to_client(client_t& client) noexcept {
         }
     }
 
-    delete payload;
+    free((char*)stream);
 
     if(container != nullptr)
         delete container;
