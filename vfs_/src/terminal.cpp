@@ -227,9 +227,13 @@ VFS::system_cmd terminal::valid_mv(std::vector<std::string>& parts) noexcept {
 }
 
 VFS::system_cmd terminal::valid_cp(std::vector<std::string>& parts) noexcept {
-    if(parts.size() == 3 || parts.size() == 4)
+    if(strcmp(parts[1].c_str(), "imp") == 0 || strcmp(parts[1].c_str(), "exp") == 0) {
+        if(parts.size() == 4)
+            return VFS::system_cmd::cp;
+    } else if(parts.size() == 3)
         return VFS::system_cmd::cp;
-    else return VFS::system_cmd::invalid;
+
+    return VFS::system_cmd::invalid;
 }
 
 VFS::system_cmd terminal::valid_cat(std::vector<std::string>& parts) noexcept {

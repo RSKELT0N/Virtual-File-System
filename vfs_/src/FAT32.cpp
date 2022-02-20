@@ -248,7 +248,7 @@ void FAT32::load() noexcept {
     m_disk->open(DISK_NAME, "rb+");
     load_superblock();
     define_fat_table();
-    #if __DEBUG__
+    #if _DEBUG_
     load_fat_table();
     #endif
     m_root = read_dir(0);
@@ -732,6 +732,7 @@ void FAT32::cp(const char* src, const char* dst) noexcept {
 
 void FAT32::cp_imp(const char* src, const char* dst) noexcept {
     std::vector<std::string> parts = split(dst, '/');
+
     dir_entr_ret_t* ddst = parsePath(parts, 0x0);
     const char* entr_name = parts[parts.size() - 1].c_str();
 
@@ -742,6 +743,22 @@ void FAT32::cp_imp(const char* src, const char* dst) noexcept {
 
     insert_ext_file(*ddst->m_dir, src, entr_name);
     delete ddst;
+}
+
+void FAT32::cp_exp(const char* src, const char* dst) noexcept {
+    std::vector<std::string> parts = split(src, '/');
+
+    dir_entr_ret_t* ssrc = parsePath(parts, 0x1);
+    const char* entr_name = parts[parts.size() - 1].c_str();
+
+    if(!ssrc) {
+        BUFFER << (LOG_str(Log::WARNING, "src specified is invalid"));
+        return;
+    }
+
+    char* buffer = &(*read_file(*ssrc->m_dir, parts[parts.size() - 1].c_str()));
+    store_ext_file_buffer(dst, buffer, strlen(buffer));
+    free(buffer);
 }
 
 void FAT32::mkdir(const char* dir) noexcept {

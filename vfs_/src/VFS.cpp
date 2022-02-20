@@ -261,6 +261,8 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
 
         case VFS::system_cmd::cp:    if(args[0] == "imp") 
                                         (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_imp(args[1].c_str(), args[2].c_str()));
+                                    else if(args[0] == "exp")
+                                        (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_exp(args[1].c_str(), args[2].c_str()));
                                     else (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp(args[0].c_str(), args[1].c_str())); break;
         default: break;
     }
