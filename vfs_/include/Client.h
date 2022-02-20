@@ -17,6 +17,9 @@
     #pragma comment(lib, "ws2_32.lib")
 #endif
 
+#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+#define PBWIDTH 60
+
 class Client : public RFS {
     
 public:

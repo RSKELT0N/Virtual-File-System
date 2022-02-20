@@ -3,7 +3,7 @@
 int itoa_(int value, char *sp, int radix, int amt) {
     char tmp[amt];// be careful with the length of the buffer
     char *tp = tmp;
-    uint32_t i = 0;
+    uint64_t i = 0;
     unsigned v = 0;
 
     int sign = (radix == 10 && value < 0);    
@@ -21,7 +21,7 @@ int itoa_(int value, char *sp, int radix, int amt) {
           *tp++ = i + 'a' - 10;
     }
 
-    int len = tp - tmp;
+    uint64_t len = tp - tmp;
 
     if (sign) {
         *sp++ = '-';
@@ -260,7 +260,7 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
         case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));   break;
 
         case VFS::system_cmd::cp:    if(args[0] == "imp") 
-                                        (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_ext(args[1].c_str(), args[2].c_str()));
+                                        (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_imp(args[1].c_str(), args[2].c_str()));
                                     else (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp(args[0].c_str(), args[1].c_str())); break;
         default: break;
     }

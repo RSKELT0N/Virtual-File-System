@@ -1,5 +1,39 @@
 #include "../include/FS.h"
 
+std::string FS::convert_size(const uint64_t& bytes_) const noexcept {
+    long double ret = 0;
+    long double bytes = static_cast<long double>(bytes_);
+
+    char buffer[10];
+    memset(buffer, '\0', 10);
+
+    if(bytes > ((long double)(1 << 30))) {
+        ret = bytes / (1 << 30);
+        sprintf(buffer, "%03.2LfGb", ret);
+        goto end;
+    }
+
+    if(bytes > ((long double)(1 << 20))) {
+        ret = bytes / (1 << 20);
+        sprintf(buffer, "%03.2LfMb", ret);
+        goto end;
+    }
+
+    if(bytes > ((long double)(1 << 10))) {
+        ret = bytes / (1 << 10);
+        sprintf(buffer, "%03.2LfKb", ret);
+        goto end;
+    }
+
+    ret = bytes;
+    if(buffer[0] == '\0')
+        sprintf(buffer, "%03.2LfBy", ret);
+
+    end:
+
+    return std::string(std::string(buffer));
+}
+
 FILE* FS::get_file_handlr(const char* file) noexcept {
     FILE* handlr = fopen(file, "r");
     return handlr;

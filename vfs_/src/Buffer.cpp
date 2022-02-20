@@ -17,10 +17,12 @@ Buffer* Buffer::mBuf_p;
 
 Buffer::Buffer() {
     this->mLock = new std::mutex();
+    this->mStream = new std::string();
 }
 
 Buffer::~Buffer() {
     delete mLock;
+    delete mStream;
     printf("Deleted Buffer\n");
 }
 
@@ -41,32 +43,27 @@ void Buffer::hold_buffer() noexcept {
 
 void Buffer::release_buffer() noexcept {
     mLock->unlock();
-    mStream.clear();
+    mStream->clear();
 }
 
 const char* Buffer::retain_buffer() noexcept {
-    mStream.insert(0, "\r");
-    return mStream.c_str();
+    mStream->insert(0, "\r");
+    return mStream->c_str();
 }
 
 Buffer& Buffer::operator<<(const char* str) noexcept {
-    if(mStream.size() < BUFFER_MAX)
-        mStream += str;
-    else {
-        printf("%s", mStream.c_str());
-        mStream.clear();
-    }
+    mStream->append(str);
 
     return *(this);
 }
 
-Buffer& Buffer::operator<<(int val) noexcept {
+Buffer& Buffer::operator<<(uint64_t val) noexcept {
     int amt = countDigit(val);
     char buffer[amt];
 
     itoa_(val, buffer, 10, amt);
     buffer[amt] = '\0';
-    mStream += buffer;
+    mStream->append(buffer);
 
     return (*this);
 }

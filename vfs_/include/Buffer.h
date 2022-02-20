@@ -20,7 +20,7 @@ public:
 
 public:
     static Buffer* get_buffer() noexcept;
-    Buffer& operator<<(int) noexcept;
+    Buffer& operator<<(uint64_t) noexcept;
     Buffer& operator<<(const char*) noexcept;
 
     void hold_buffer() noexcept;
@@ -31,7 +31,7 @@ private:
     std::mutex* mLock;
     static Buffer* mBuf_p;
 public:
-    std::string mStream;
+    std::string *mStream;
 };
 
 

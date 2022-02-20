@@ -56,7 +56,7 @@ private:
         char dir_entry_name[DIR_NAME_LENGTH];
         uint32_t start_cluster_index;
 
-        uint32_t dir_entry_size;
+        uint64_t dir_entry_size;
         uint8_t is_directory;
     } dir_entry_t;
 
@@ -85,7 +85,7 @@ public:
     void rm(std::vector<std::string>& tokens) noexcept override;
     void mv(std::vector<std::string>& tokens) noexcept override;
     void cp(const char* src, const char* dst) noexcept override;
-    void cp_ext(const char* src, const char* dst) noexcept override;
+    void cp_imp(const char* src, const char* dst) noexcept override;
     void touch(std::vector<std::string>& tokens, const char* buffer) noexcept override;
     void cat(const char* path) noexcept override;
     void ls() noexcept override;
@@ -96,7 +96,7 @@ private:
     void load() noexcept;
 
     void create_disk() noexcept;
-    void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept;
+    void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint64_t& size, const uint8_t& is_dir) noexcept;
 
     void define_superblock() noexcept;
     void define_fat_table() noexcept;
@@ -124,7 +124,7 @@ private:
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
     char* read_file(dir_t& dir, const char* entry_name) noexcept;
 
-    uint32_t attain_clu() const noexcept;
+    uint32_t attain_clu(uint64_t = 0) const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
     std::vector<uint32_t> get_list_of_clu(const uint32_t& start_clu) noexcept;
     void rm_entr_mem(dir_t& dir, const char* name) noexcept;
@@ -135,7 +135,7 @@ private:
 
 public:
     void print_fat_table() const noexcept;
-    void print_dir(dir_t& dir) const noexcept;
+    void print_dir(dir_t& dir) noexcept;
     void print_super_block() const noexcept;
 
 private:
@@ -148,11 +148,11 @@ private:
     static constexpr uint64_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 
     static constexpr uint64_t  STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
-    static constexpr uint32_t SUPERBLOCK_START_ADDR = 0x00000000;
-    static constexpr uint32_t FAT_TABLE_START_ADDR  = sizeof(superblock_t);
-    static constexpr uint32_t FAT_TABLE_SIZE        = sizeof(uint32_t) * CLUSTER_AMT;
-    static constexpr uint32_t ROOT_START_ADDR       = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
-    static constexpr uint32_t SUPERBLOCK_SIZE       = sizeof(superblock_t);
+    static constexpr uint32_t SUPERBLOCK_START_ADDR  = 0x00000000;
+    static constexpr uint32_t FAT_TABLE_START_ADDR   = sizeof(superblock_t);
+    static constexpr uint32_t FAT_TABLE_SIZE         = sizeof(uint32_t) * CLUSTER_AMT;
+    static constexpr uint32_t ROOT_START_ADDR        = FAT_TABLE_START_ADDR + FAT_TABLE_SIZE;
+    static constexpr uint32_t SUPERBLOCK_SIZE        = sizeof(superblock_t);
 
 private:
     DiskDriver* m_disk;

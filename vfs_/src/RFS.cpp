@@ -68,7 +68,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         con->info.cmd = cmd;
         memcpy(con->info.flags, flags.c_str(), CFG_FLAGS_BUFFER_SIZE);
         con->info.p_count = amount_of_payloads;
-        con->info.size = sizeof(packet_t) + (sizeof(payload_t) * con->info.p_count);
+        con->info.size = load_size + (sizeof(packet_t) * 8);
 
         return con;
 }
@@ -168,7 +168,7 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)header_p;
     int pyld_c = 0;
 
-    while(pyld_c < pyld.header.size) {
+    while(pyld_c < CFG_PAYLOAD_SIZE) {
         *char_p = pyld.payload[pyld_c];
         char_p++;
         pyld_c++;
@@ -183,7 +183,7 @@ void RFS::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     char* char_p = (char*)header_p;
     int pyld_c = 0;
 
-    while(pyld_c < pyld.header.size) {
+    while(pyld_c < CFG_PAYLOAD_SIZE) {
         pyld.payload[pyld_c] = *char_p;
         char_p++;
         pyld_c++;
@@ -212,11 +212,11 @@ uint8_t RFS::process_packet(const packet_t& pckt) const noexcept {
     if(strncmp(pckt.signature, CFG_PACKET_SIGNATURE, CFG_PACKET_SIGNATURE_SIZE) != 0)
         return_val = 0;
     
-    if(pckt.size < (pckt.p_count * sizeof(payload_t)))
-        return_val = 0;
+    // if(pckt.size < (pckt.p_count * sizeof(payload_t)))
+    //     return_val = 0;
     
-    if(pckt.p_count > (pckt.size / sizeof(payload_t)))
-        return_val = 0;
+    // if(pckt.p_count > (pckt.size / sizeof(payload_t)))
+    //     return_val = 0;
 
     return return_val;
 }

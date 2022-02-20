@@ -21,13 +21,14 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_USER_SPACE_SIZE       GB(2)
-#define CFG_CLUSTER_SIZE          KB(2)
+#define CFG_RECOMMENDED_CLU_AMT   (1000)
+#define CFG_USER_SPACE_SIZE       (GB(2))
+#define CFG_CLUSTER_SIZE          (CFG_USER_SPACE_SIZE / CFG_RECOMMENDED_CLU_AMT)
 
 // RFS
 #define CFG_SOCK_OPEN             (uint8_t)1
 #define CFG_SOCK_CLOSE            (uint8_t)0
-#define CFG_DEFAULT_PORT          (uint32_t)60000
+#define CFG_DEFAULT_PORT          (uint32_t)52222
 #define CFG_SOCK_LISTEN_AMT       (uint32_t)5
 
 #define CFG_PACKET_SIGNATURE      (char*)"[_VFS_]\0"

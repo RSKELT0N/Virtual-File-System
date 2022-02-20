@@ -261,9 +261,10 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 }
 
 void Server::send_to_client(client_t& client) noexcept {
-    uint64_t buffer_size = BUFFER.mStream.size();
+    uint64_t buffer_size = BUFFER.mStream->size();
     char* stream = (char*)malloc(sizeof(char) * buffer_size);
     memcpy(stream, BUFFER.retain_buffer(), buffer_size);
+    stream[buffer_size] = '\0';
 
     std::vector<std::string> flags;
     pcontainer_t* container = nullptr;

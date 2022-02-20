@@ -1,5 +1,13 @@
 #include "../include/Client.h"
 
+void printProgress(double percentage) {
+    int val = (int) (percentage * 100);
+    int lpad = (int) (percentage * PBWIDTH);
+    int rpad = PBWIDTH - lpad;
+    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+    fflush(stdout);
+}
+
 extern constexpr unsigned int hash(const char *s, int off = 0);
 
 Client::Client(const char* addr, const int32_t& port) {
@@ -51,27 +59,38 @@ void Client::connect() noexcept {
 }
 
 void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::string>& args) noexcept {
-
     char** payload = (char**)malloc(sizeof(char*));
     *payload = nullptr;
     get_payload(str_cmd, args, *payload);
     pcontainer_t* container = generate_container(cmd, args, *payload);
     free(payload);
+
     // Serialize packet.
     char buffer[CFG_PACKET_SIZE];
     memset(buffer, 0, CFG_PACKET_SIZE);
     serialize_packet(container->info, buffer);
+
     // sending info packet towards server, with command info related to input. Formatted ispl.
     send(buffer, sizeof(packet_t));
+    double data_sent = 0;
+    double data_size = container->info.size;
+    data_size -= (sizeof(packet_t) * 8);
 
-    int i;
-    for(i = 0; i < container->info.p_count; i++) {
+    for(int i = 0; i < container->info.p_count; i++) {
         memset(buffer, 0, CFG_PACKET_SIZE);
         // Serialize payload
         serialize_payload(container->payloads->at(i), buffer);
         // send payload per fragment.
         send(buffer, sizeof(payload_t));
+        data_sent += container->payloads->at(i).header.size;
+
+        printProgress((double)data_sent/data_size);
     }
+    if(data_sent != 0) {
+        printProgress((double)data_sent/data_size);
+        printf("\n");
+    }
+
     //packet has been sent.
     delete container;
 }
@@ -167,12 +186,9 @@ void Client::interpret_input(const pcontainer_t& container) noexcept {
     }
 
     buffer[data_copied] = '\0';
-    BUFFER << buffer;
+    printf("%s\n", buffer);
     memset(buffer, 0, payload_size);
     free(buffer);
-
-    const char* stream = BUFFER.retain_buffer();
-    printf("%s\n", stream);
     BUFFER.release_buffer();
 }
 

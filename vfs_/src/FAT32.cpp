@@ -248,7 +248,9 @@ void FAT32::load() noexcept {
     m_disk->open(DISK_NAME, "rb+");
     load_superblock();
     define_fat_table();
+    #if __DEBUG__
     load_fat_table();
+    #endif
     m_root = read_dir(0);
     m_curr_dir = m_root;
     BUFFER << (LOG_str(Log::INFO, "Disk '" + std::string(DISK_NAME) + "' has been loaded"));
@@ -390,7 +392,6 @@ char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
 
         m_disk->seek(addr_offset);
         m_disk->read(buffer + data_read, sizeof(char), CLUSTER_SIZE);
-        fflush(((Disk*)m_disk)->get_file());
         curr_clu = m_fat_table[curr_clu];
         data_read += CLUSTER_SIZE;
     }
@@ -442,8 +443,11 @@ int32_t FAT32::store_file(const char* data) noexcept {
     uint32_t* clu_list = (uint32_t*)malloc(sizeof(uint32_t) * amt_of_clu_needed);
     memset(clu_list, 0, amt_of_clu_needed);
 
-    for (int i = 0; i < amt_of_clu_needed; i++)
-        clu_list[i] = attain_clu();
+    uint64_t last_fnd_clu= 0;
+    for (int i = 0; i < amt_of_clu_needed; i++) {
+        clu_list[i] = attain_clu(last_fnd_clu);
+        last_fnd_clu = clu_list[i];
+    }
 
     first_cluster = clu_list[0];
 
@@ -569,9 +573,9 @@ FAT32::dir_entr_ret_t* FAT32::parsePath(std::vector<std::string>&path, uint8_t s
     return ret;
 }
 
-uint32_t FAT32::attain_clu() const noexcept {
+uint32_t FAT32::attain_clu(uint64_t clu_index) const noexcept {
     uint32_t rs = 0;
-    for (int i = 0; i < CLUSTER_AMT; i++) {
+    for (int i = clu_index; i < CLUSTER_AMT; i++) {
         if (m_fat_table[i] == UNALLOCATED_CLUSTER) {
             rs = i;
             m_fat_table[rs] = ALLOCATED_CLUSTER;
@@ -627,7 +631,7 @@ void FAT32::rm_entr_mem(dir_t & dir, const char* name) noexcept {
     dir.dir_header.dir_entry_amt--;
 }
 
-void FAT32::add_new_entry(dir_t& curr_dir, const char* name, const uint32_t& start_clu, const uint32_t& size, const uint8_t& is_dir) noexcept {
+void FAT32::add_new_entry(dir_t& curr_dir, const char* name, const uint32_t& start_clu, const uint64_t& size, const uint8_t& is_dir) noexcept {
 
     curr_dir.dir_header.dir_entry_amt += 1;
     dir_entry_t* tmp_entries = curr_dir.dir_entries;
@@ -726,7 +730,7 @@ void FAT32::cp(const char* src, const char* dst) noexcept {
     delete ddst;
 }
 
-void FAT32::cp_ext(const char* src, const char* dst) noexcept {
+void FAT32::cp_imp(const char* src, const char* dst) noexcept {
     std::vector<std::string> parts = split(dst, '/');
     dir_entr_ret_t* ddst = parsePath(parts, 0x0);
     const char* entr_name = parts[parts.size() - 1].c_str();
@@ -858,11 +862,11 @@ void FAT32::print_super_block() const noexcept {
 
     BUFFER << "  meta data\n-------------\n";
     BUFFER << " -> Disk:            " << m_superblock.data.disk_name << "\n";
-    BUFFER << " -> Disk size:       " << m_superblock.data.disk_size << "b\n";
-    BUFFER << " -> Superblock size: " << m_superblock.data.superblock_size << "b\n";
-    BUFFER << " -> Fat table size:  " << m_superblock.data.fat_table_size << "b\n";
-    BUFFER << " -> User space:      " << m_superblock.data.user_size << "b\n";
-    BUFFER << " -> Cluster size:    " << m_superblock.data.cluster_size << "\n";
+    BUFFER << " -> Disk size:       " << convert_size(m_superblock.data.disk_size).c_str() << "\n";
+    BUFFER << " -> Superblock size: " << convert_size(m_superblock.data.superblock_size).c_str() << "\n";
+    BUFFER << " -> Fat table size:  " << convert_size(m_superblock.data.fat_table_size).c_str() << "\n";
+    BUFFER << " -> User space:      " << convert_size(m_superblock.data.user_size).c_str() << "\n";
+    BUFFER << " -> Cluster size:    " << convert_size(m_superblock.data.cluster_size).c_str() << "\n";
     BUFFER << " -> Cluster amount:  " << m_superblock.data.cluster_n << "\n";
 
     BUFFER << "\n  Address space\n-----------------\n";
@@ -889,7 +893,7 @@ void FAT32::print_fat_table() const noexcept {
     BUFFER << (buffer);
 }
 
-void FAT32::print_dir(dir_t & dir) const noexcept {
+void FAT32::print_dir(dir_t & dir) noexcept {
     char buffer[1024 * 4];
     if ((dir_t*)&dir == NULL) {
         BUFFER << (LOG_str(Log::WARNING, "specified directory to be printed is null"));
@@ -904,8 +908,9 @@ void FAT32::print_dir(dir_t & dir) const noexcept {
     sprintf(buffer + strlen(buffer), "\n %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
 
     for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
-        sprintf(buffer + strlen(buffer), "%05db%8s%02d%10s%s\n", dir.dir_entries[i].dir_entry_size, "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
+        sprintf(buffer + strlen(buffer), "%s%8s%02d%10s%s\n", convert_size(dir.dir_entries[i].dir_entry_size).c_str(), "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
     }
+    
     sprintf(buffer + strlen(buffer), "-------------------------------");
     sprintf(buffer + strlen(buffer), "\n");
 
