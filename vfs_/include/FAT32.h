@@ -112,7 +112,7 @@ private:
     void load_superblock() noexcept;
     void load_fat_table() noexcept;
 
-    int32_t store_file(const char* path) noexcept;
+    int32_t store_file(const char* path, uint32_t data_size) noexcept;
 
     uint32_t insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
     void insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept;

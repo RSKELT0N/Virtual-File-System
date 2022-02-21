@@ -26,41 +26,39 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         
         uint64_t load_size = strlen(payload);
         uint64_t amount_of_payloads = 0;
+        size_t data_read = {};
 
         if(load_size > 0) {
-            size_t data_read = {};
+    
             amount_of_payloads = load_size / CFG_PAYLOAD_SIZE;
 
             if(load_size > CFG_PAYLOAD_SIZE)
                 if(load_size % CFG_PAYLOAD_SIZE)
                     amount_of_payloads++;
 
-            if(load_size > 0 && load_size < CFG_PAYLOAD_SIZE)
+            if(amount_of_payloads == 0)
                 amount_of_payloads += 1;
     
-            for(int i = 0; (uint64_t)i < (amount_of_payloads - 1); i++) {
-                payload_t tmp;
-                memcpy(tmp.header.hash, con->info.hash, CFG_PACKET_HASH_SIZE);
-                tmp.header.size = CFG_PAYLOAD_SIZE;
+            payload_t tmp;
+            memcpy(tmp.header.hash, con->info.hash, CFG_PACKET_HASH_SIZE);
+            tmp.header.size = CFG_PAYLOAD_SIZE;
+            tmp.header.mf = 0x1;
+            for(uint64_t i = 0; i < (amount_of_payloads - 1); i++) {
                 tmp.header.index = i;
-                tmp.header.mf = 0x1;
-
                 memcpy(tmp.payload, &(payload[data_read]), CFG_PAYLOAD_SIZE);
-                con->payloads->push_back(tmp);
 
+                con->payloads->push_back(tmp);
                 data_read += CFG_PAYLOAD_SIZE;
             }
 
             uint64_t remaining_data = load_size - data_read;
 
-            payload_t final;
-            memcpy(final.header.hash, con->info.hash, CFG_PACKET_HASH_SIZE);
-            final.header.mf = 0x0;
-            final.header.size = remaining_data;
-            final.header.index = amount_of_payloads - 1;
+            tmp.header.mf = 0x0;
+            tmp.header.size = remaining_data;
+            tmp.header.index = amount_of_payloads - 1;
 
-            memcpy(final.payload, &(payload[data_read]), remaining_data);
-            con->payloads->push_back(final);
+            memcpy(tmp.payload, &(payload[data_read]), remaining_data);
+            con->payloads->push_back(tmp);
 
             data_read += load_size - data_read;
         }
@@ -73,16 +71,22 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         return con;
 }
 
-std::string* RFS::retain_payloads(std::vector<payload_t>& pylds) noexcept {
-    std::string* payloads = new std::string();
+void RFS::retain_payloads(char*& buffer, std::vector<payload_t>& pylds) noexcept {
+    uint64_t size = 0;
+    for(int i = 0; i < pylds.size(); i++)
+        size += pylds[i].header.size;
+
+    buffer = (char*)malloc(sizeof(char) * size);
+    memset(buffer, 0, size);
     
-    int i;
-    for(i = 0; i < pylds.size(); i++)
-        for(int j = 0; j < pylds[i].header.size; j++)
-            *payloads += pylds[i].payload[j];
-    
-    return payloads;
+    uint64_t data_copied = 0;
+    for(int i = 0; i < pylds.size(); i++) {
+        memcpy(&(buffer[data_copied]), pylds[i].payload, pylds[i].header.size);
+        data_copied += pylds[i].header.size;
+    }
+    buffer[data_copied] = '\0';
 }
+
 
 void RFS::serialize_packet(packet_t& pckt, char* buffer) noexcept {
     // Store signature.
@@ -164,6 +168,7 @@ void RFS::serialize_payload(payload_t& pyld, char* buffer) noexcept {
     // Store payload header.
     payload_header_t* header_p = (payload_header_t*)buffer;
     *header_p = pyld.header; header_p++;
+
     //Store payload.
     char* char_p = (char*)header_p;
     int pyld_c = 0;

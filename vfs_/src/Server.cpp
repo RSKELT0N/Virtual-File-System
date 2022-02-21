@@ -134,8 +134,8 @@ void Server::handle(client_t* client) noexcept {
 
 void Server::receive(client_t& client) noexcept {
     int val = 0;
-    char buffer[CFG_PACKET_SIZE];
-    memset(buffer, 0, CFG_PACKET_SIZE);
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
     // declare container to store info and payload packets.
     pcontainer_t* container = new pcontainer_t;
     // recv info packet and store it within the container info address.
@@ -149,8 +149,6 @@ void Server::receive(client_t& client) noexcept {
         delete container;
         return;
     }
-    // reset buffer array.
-    memset(buffer, 0, CFG_PACKET_SIZE);
     // check whether info has any payload.
     if(container->info.p_count == 0)
         goto no_payload;
@@ -159,7 +157,7 @@ void Server::receive(client_t& client) noexcept {
     // check whether first payload has any mf flag set to 0x1 and then the last 0x0.
     for(int i = 0; i < container->info.p_count; i++) {
         // reset buffer array.
-        memset(buffer, 0, CFG_PACKET_SIZE);
+        memset(buffer, 0, BUFFER_SIZE);
         memset(tmp.payload, 0, CFG_PAYLOAD_SIZE);
         // recv a payload
         recv_(buffer, client, sizeof(payload_t));
@@ -231,10 +229,9 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         }
     }
 
-    std::string* payload = new std::string();
+    char* payload = "\0";
     if(container->info.p_count != 0) {
-        delete payload;
-        payload = retain_payloads(*container->payloads);
+        retain_payloads(payload, *container->payloads);
     }
     
     const char* stream = BUFFER.retain_buffer();
@@ -246,7 +243,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 
     BUFFER.hold_buffer();
     if(tvfs->is_mnted())
-        (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload->c_str());
+        (*tvfs.*tvfs->get_mnted_system()->access)(cmd, args, payload);
     else BUFFER << LOG_str(Log::WARNING, "Server does not have a system mounted");
 
     send_to_client(client);
@@ -257,11 +254,17 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         print_payload(container->payloads->at(i));
     }
 #endif // _DEBUG_
-    delete payload;
+    BUFFER.release_buffer();
+    if(*payload != '\0')
+        delete payload;
 }
 
 void Server::send_to_client(client_t& client) noexcept {
     uint64_t buffer_size = BUFFER.mStream->size();
+
+    if(buffer_size == 0)
+        return;
+
     char* stream = (char*)malloc(sizeof(char) * buffer_size);
     memcpy(stream, BUFFER.retain_buffer(), buffer_size);
     stream[buffer_size] = '\0';
@@ -269,22 +272,19 @@ void Server::send_to_client(client_t& client) noexcept {
     std::vector<std::string> flags;
     pcontainer_t* container = nullptr;
 
-    if(buffer_size > 0) {
-        char buffer[CFG_PACKET_SIZE];
-        memset(buffer, 0, CFG_PACKET_SIZE);
-        container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, const_cast<char*&>(stream));
-        serialize_packet(container->info, buffer);
-        send(buffer, client, sizeof(packet_t));
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
+    container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, const_cast<char*&>(stream));
+    serialize_packet(container->info, buffer);
+    send(buffer, client, sizeof(packet_t));
 
-        for(int i = 0; i < container->info.p_count; i++) {
-            memset(buffer, 0, CFG_PACKET_SIZE);
-            serialize_payload(container->payloads->at(i), buffer);
-            send(buffer, client, sizeof(payload_t));
-        }
+    for(int i = 0; i < container->info.p_count; i++) {
+        memset(buffer, 0, BUFFER_SIZE);
+        serialize_payload(container->payloads->at(i), buffer);
+        send(buffer, client, sizeof(payload_t));
     }
 
     free((char*)stream);
-
     if(container != nullptr)
         delete container;
     BUFFER.release_buffer();

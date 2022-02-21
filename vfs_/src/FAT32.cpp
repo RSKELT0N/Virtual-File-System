@@ -123,13 +123,11 @@ FAT32::dir_t* FAT32::init_dir(const uint32_t & start_cl, const uint32_t & parent
 void FAT32::store_superblock() noexcept {
     m_disk->seek(m_superblock.superblock_addr);
     m_disk->write((void*)&m_superblock, sizeof(m_superblock), 1);
-    fflush(((Disk*)m_disk)->get_file());
 }
 
 void FAT32::store_fat_table() noexcept {
     m_disk->seek(m_superblock.fat_table_addr);
     m_disk->write(m_fat_table, sizeof(uint32_t), (uint32_t)CLUSTER_AMT);
-    fflush(((Disk*)m_disk)->get_file());
 }
 
 void FAT32::store_dir(dir_t & directory)  noexcept {
@@ -164,7 +162,6 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
 
     m_disk->seek(m_superblock.root_dir_addr + (first_clu_index * CLUSTER_SIZE));
     m_disk->write((void*)&directory.dir_header, sizeof(dir_header_t), 1);
-    fflush(((Disk*)m_disk)->get_file());
 
     uint16_t num_of_clu_needed;
     if (remain_entries < amt_of_entry_per_clu)
@@ -178,7 +175,6 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
 
         m_disk->seek(addr_offset + (i * sizeof(dir_entry_t)));
         m_disk->write((void*)&directory.dir_entries[i], sizeof(dir_entry_t), 1);
-        fflush(((Disk*)m_disk)->get_file());
         entries_written += 1;
     }
     // /////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,7 +210,6 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
 
         m_disk->seek(addr_offset);
         m_disk->write((void*)&directory.dir_entries[entries_written], sizeof(dir_entry_t), amt_of_entry_per_clu);
-        fflush(((Disk*)m_disk)->get_file());
         remain_entries -= amt_of_entry_per_clu;
         entries_written += amt_of_entry_per_clu;
     }
@@ -309,7 +304,6 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
     //attain dir_header
     m_disk->seek(dir_start_addr);
     m_disk->read((void*)&ret->dir_header, sizeof(dir_header_t), 1);
-    fflush(((Disk*)m_disk)->get_file());
 
     uint16_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(ret->dir_header)) / sizeof(dir_entry_t);
     uint16_t remain_entries = (first_clu_entry_amt >= ret->dir_header.dir_entry_amt) ? 0 : (ret->dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
@@ -323,7 +317,6 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
 
         m_disk->seek(addr_offset + (i * sizeof(dir_entry_t)));
         m_disk->read((void*)&ret->dir_entries[i], sizeof(dir_entry_t), 1);
-        fflush(((Disk*)m_disk)->get_file());
         entries_read += 1;
     }
 
@@ -350,7 +343,6 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
 
         m_disk->seek(addr_offset);
         m_disk->read((void*)&ret->dir_entries[entries_read], sizeof(dir_entry_t), amt_of_entries_per_clu);
-        fflush(((Disk*)m_disk)->get_file());
         entries_read += amt_of_entries_per_clu;
         curr_clu = m_fat_table[curr_clu];
     }
@@ -375,31 +367,10 @@ char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
         return buffer;
     }
 
-    uint64_t amt_of_clu_used = 0;
+    uint64_t curr_clu = entry_ptr->start_cluster_index;
     uint64_t data_read = 0;
 
-    if (entry_size <= CLUSTER_SIZE)
-        amt_of_clu_used = 1;
-    else amt_of_clu_used = entry_size / CLUSTER_SIZE;
-
-    if (entry_size > CLUSTER_SIZE) {
-        if (entry_size % CLUSTER_SIZE > 0)
-            amt_of_clu_used++;
-    }
-
-    if (amt_of_clu_used == 1) {
-        m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * entry_ptr->start_cluster_index));
-        m_disk->read(buffer, sizeof(char), entry_size);
-        fflush(((Disk*)m_disk)->get_file());
-
-        data_read += entry_size;
-
-        return buffer;
-    }
-
-    uint64_t curr_clu = entry_ptr->start_cluster_index;
-
-    for (int i = 0; i < amt_of_clu_used - 1; i++) {
+    while(m_fat_table[curr_clu] != EOF_CLUSTER) {
         uint64_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
 
         m_disk->seek(addr_offset);
@@ -417,10 +388,9 @@ char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
     return buffer;
 }
 
+int32_t FAT32::store_file(const char* data, uint32_t data_size) noexcept {
 
-int32_t FAT32::store_file(const char* data) noexcept {
-
-    uint32_t sdata = strlen(data);
+    uint32_t sdata = data_size;
     uint32_t first_cluster = 0;
     size_t data_read = 0;
     
@@ -441,7 +411,6 @@ int32_t FAT32::store_file(const char* data) noexcept {
         m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * first_cluster));
         m_disk->write(data, sizeof(char), sdata);
         data_read += sdata;
-        fflush(((Disk*)m_disk)->get_file());
 
         m_fat_table[first_cluster] = EOF_CLUSTER;
         return first_cluster;
@@ -466,7 +435,6 @@ int32_t FAT32::store_file(const char* data) noexcept {
 
         m_disk->seek(off_adr);
         m_disk->write(data+data_read, CLUSTER_SIZE, 1);
-        fflush(((Disk*)m_disk)->get_file());
 
         data_read += CLUSTER_SIZE;
     }
@@ -488,7 +456,7 @@ int32_t FAT32::store_file(const char* data) noexcept {
 
 void FAT32::insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept {
     uint32_t sbuffer = strlen(buffer);
-    uint32_t start_clu = store_file(buffer);
+    uint32_t start_clu = store_file(buffer, sbuffer);
 
     if (start_clu == -1) {
         BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));
@@ -509,7 +477,8 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
     *buffer = nullptr;
 
     get_ext_file_buffer(path, *buffer);
-    uint32_t start_clu = store_file(*buffer);
+    long size = get_file_size(path); 
+    uint32_t start_clu = store_file(*buffer, size);
 
     if (start_clu == -1) {
         BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));
@@ -735,7 +704,7 @@ void FAT32::cp_imp(const char* src, const char* dst) noexcept {
     dir_entr_ret_t* ddst = parsePath(parts, 0x0);
     const char* entr_name = parts[parts.size() - 1].c_str();
 
-    if(!dst) {
+    if(!ddst) {
         BUFFER << (LOG_str(Log::WARNING, "dst specified is invalid"));
         return;
     }
@@ -828,7 +797,6 @@ void FAT32::touch(std::vector<std::string>& parts, const char* buffer) noexcept 
             delete entr;
             return;
         }
-
         insert_int_file(*entr->m_dir, buffer, init_file_name);
 
         delete entr;
@@ -884,6 +852,7 @@ void FAT32::print_super_block() const noexcept {
     BUFFER << " -> User space:      " << convert_size(m_superblock.data.user_size).c_str() << "\n";
     BUFFER << " -> Cluster size:    " << convert_size(m_superblock.data.cluster_size).c_str() << "\n";
     BUFFER << " -> Cluster amount:  " << m_superblock.data.cluster_n << "\n";
+    BUFFER << " -> Clusters free:   " << m_free_clusters->size() << "\n";
 
     BUFFER << "\n  Address space\n-----------------\n";
 

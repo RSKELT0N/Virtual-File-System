@@ -66,8 +66,8 @@ VFS::~VFS() {
     if(server != nullptr)
         delete (Server*)server;
 
-    delete mnted_system;
     free(disks);
+    delete mnted_system;
     free(vfs);
     printf("Deleted VFS\n");
 }
@@ -255,7 +255,7 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
         case VFS::system_cmd::cd:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cd(args[0].c_str()));    break;
         case VFS::system_cmd::ls:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->ls());                   break;
         case VFS::system_cmd::rm:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->rm(args));               break;
-        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args, buffer));            break;
+        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args, buffer));    break;
         case VFS::system_cmd::mv:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mv(args));               break;
         case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));   break;
 

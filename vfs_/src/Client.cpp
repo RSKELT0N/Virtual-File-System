@@ -66,8 +66,8 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     free(payload);
 
     // Serialize packet.
-    char buffer[CFG_PACKET_SIZE];
-    memset(buffer, 0, CFG_PACKET_SIZE);
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
     serialize_packet(container->info, buffer);
 
     // sending info packet towards server, with command info related to input. Formatted ispl.
@@ -77,7 +77,7 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     data_size -= (sizeof(packet_t) * 8);
 
     for(int i = 0; i < container->info.p_count; i++) {
-        memset(buffer, 0, CFG_PACKET_SIZE);
+        memset(buffer, 0, BUFFER_SIZE);
         // Serialize payload
         serialize_payload(container->payloads->at(i), buffer);
         // send payload per fragment.
@@ -132,8 +132,8 @@ uint8_t Client::receive(char* buffer, size_t bytes) noexcept {
 }
 
 void Client::receive_from_server() noexcept {
-    char buffer[CFG_PACKET_SIZE];
-    memset(buffer, 0, CFG_PACKET_SIZE);
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
 
     if(receive(buffer, sizeof(packet_t)) < 1)
         return;
@@ -150,7 +150,7 @@ void Client::receive_from_server() noexcept {
     
     payload_t tmp_payload;
     for(int i = 0; i < container->info.p_count; i++) {
-        memset(buffer, 0, CFG_PACKET_SIZE);
+        memset(buffer, 0, BUFFER_SIZE);
         receive(buffer, sizeof(payload_t));
         deserialize_payload(tmp_payload, buffer);
         

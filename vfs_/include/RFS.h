@@ -65,8 +65,11 @@ protected:
     void print_payload(const payload_t&) const noexcept;
 
 public:
-    std::string* retain_payloads(std::vector<payload_t>&) noexcept;
+    void retain_payloads(char*& buffer, std::vector<payload_t>&) noexcept;
     pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, char*& payload) noexcept;
+
+public:
+    constexpr static size_t BUFFER_SIZE = sizeof(packet_t) + sizeof(payload_t);
 };
 
 #endif // _RFS_H_

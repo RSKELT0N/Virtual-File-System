@@ -5,6 +5,5 @@
 #define KB(__size__)              ((unsigned long)B(__size__)  * (unsigned long)1024)
 #define MB(__size__)              ((unsigned long)KB(__size__) * (unsigned long)1024)
 #define GB(__size__)              ((unsigned long)MB(__size__) * (unsigned long)1024)
-#define CLUSTER_ADDR(__CLUSTER__) (KB(2) * __CLUSTER__)
 
 #endif // _SIZE_H_

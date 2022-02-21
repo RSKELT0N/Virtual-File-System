@@ -9,25 +9,25 @@ std::string FS::convert_size(const uint64_t& bytes_) const noexcept {
 
     if(bytes > ((long double)(1 << 30))) {
         ret = bytes / (1 << 30);
-        sprintf(buffer, "%03.2LfGb", ret);
+        sprintf(buffer, "%03.2LfG", ret);
         goto end;
     }
 
     if(bytes > ((long double)(1 << 20))) {
         ret = bytes / (1 << 20);
-        sprintf(buffer, "%03.2LfMb", ret);
+        sprintf(buffer, "%03.2LfM", ret);
         goto end;
     }
 
     if(bytes > ((long double)(1 << 10))) {
         ret = bytes / (1 << 10);
-        sprintf(buffer, "%03.2LfKb", ret);
+        sprintf(buffer, "%03.2LfK", ret);
         goto end;
     }
 
     ret = bytes;
     if(buffer[0] == '\0')
-        sprintf(buffer, "%03.2LfBy", ret);
+        sprintf(buffer, "%03.2LfB", ret);
 
     end:
 
@@ -55,13 +55,22 @@ void FS::get_ext_file_buffer(const char* path, char*& payload) noexcept {
     fclose(file);
 }
 
+long FS::get_file_size(const char* path) noexcept {
+    FILE* file = get_file_handlr(path);
+    fseek(file, 0L, SEEK_END);
+    long sz = ftell(file);
+    fclose(file);
+    return sz;
+}
+
 void FS::store_ext_file_buffer(const char* path, char*& payload, uint64_t size) noexcept {
-    FILE* file = get_file_handlr(path, "w");
+    FILE* file = get_file_handlr(path, "w+");
 
-    if(file != NULL) {
-        return;
-    }
+    ftruncate(fileno(file), size);
+    rewind(file);
+    fclose(file);
 
+    FILE* file_ = get_file_handlr(path, "r+");
     fwrite(payload, size, sizeof(char), file);
     fclose(file);
 }
