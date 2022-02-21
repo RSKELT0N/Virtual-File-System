@@ -34,8 +34,8 @@ std::string FS::convert_size(const uint64_t& bytes_) const noexcept {
     return std::string(std::string(buffer));
 }
 
-FILE* FS::get_file_handlr(const char* file) noexcept {
-    FILE* handlr = fopen(file, "rb+");
+FILE* FS::get_file_handlr(const char* file, char* type) noexcept {
+    FILE* handlr = fopen(file, type);
     return handlr;
 }
 
@@ -56,12 +56,11 @@ void FS::get_ext_file_buffer(const char* path, char*& payload) noexcept {
 }
 
 void FS::store_ext_file_buffer(const char* path, char*& payload, uint64_t size) noexcept {
-    FILE* file = get_file_handlr(path);
+    FILE* file = get_file_handlr(path, "w");
 
     if(file != NULL) {
         return;
     }
-
 
     fwrite(payload, size, sizeof(char), file);
     fclose(file);

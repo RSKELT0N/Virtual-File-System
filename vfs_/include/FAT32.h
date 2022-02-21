@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <vector>
+#include <unordered_set>
 
 #include "IFS.h"
 #include "Disk.h"
@@ -125,7 +126,7 @@ private:
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
     char* read_file(dir_t& dir, const char* entry_name) noexcept;
 
-    uint32_t attain_clu(uint64_t = 0) const noexcept;
+    uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
     std::vector<uint32_t> get_list_of_clu(const uint32_t& start_clu) noexcept;
     void rm_entr_mem(dir_t& dir, const char* name) noexcept;
@@ -159,6 +160,7 @@ private:
     DiskDriver* m_disk;
     superblock_t m_superblock;
     uint32_t* m_fat_table;
+    std::unordered_set<uint32_t>* m_free_clusters;
     dir_t* m_root;
     dir_t* m_curr_dir;
 };

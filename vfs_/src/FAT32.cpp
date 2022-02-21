@@ -24,6 +24,7 @@ FAT32::FAT32(const char* disk_name) {
 
 FAT32::~FAT32() {
     free(m_fat_table);
+    delete m_free_clusters;
     //m_disk->rm();
     delete (Disk*)m_disk;
     delete m_root;
@@ -42,6 +43,9 @@ void FAT32::init() noexcept {
 void FAT32::set_up() noexcept {
     define_superblock();
     define_fat_table();
+
+    for(int i = CLUSTER_AMT - 1; i >= 0; i--)
+        m_free_clusters->insert(i);
 
     m_root = init_dir(0, 0, "root");
     m_curr_dir = m_root;
@@ -87,6 +91,7 @@ void FAT32::define_superblock() noexcept {
 }
 
 void FAT32::define_fat_table() noexcept {
+    m_free_clusters = new std::unordered_set<uint32_t>();
     m_fat_table = (uint32_t*)malloc(sizeof(uint32_t) * CLUSTER_AMT);
     memset((void*)m_fat_table, UNALLOCATED_CLUSTER, (size_t)FAT_TABLE_SIZE);
 }
@@ -194,6 +199,7 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
         BUFFER << (LOG_str(Log::WARNING, "remaining entries cannot be stored due to insufficient cluster amount"));
         BUFFER << (LOG_str(Log::WARNING, "'" + std::string(directory.dir_header.dir_name) + "' directory cannot be stored within: '" + std::string(DISK_NAME) + "'"));
         m_fat_table[first_clu_index] = UNALLOCATED_CLUSTER;
+        m_free_clusters->insert(first_clu_index);
         return;
     }
 
@@ -238,6 +244,7 @@ void FAT32::save_dir(dir_t &directory) noexcept {
 
     for (int i = 0; i < alloc_clu.size(); i++) {
         m_fat_table[alloc_clu[i]] = UNALLOCATED_CLUSTER;
+        m_free_clusters->insert(i);
     }
 
     store_dir(directory);
@@ -248,14 +255,14 @@ void FAT32::load() noexcept {
     m_disk->open(DISK_NAME, "rb+");
     load_superblock();
     define_fat_table();
-    #if _DEBUG_
     load_fat_table();
-    #endif
     m_root = read_dir(0);
     m_curr_dir = m_root;
     BUFFER << (LOG_str(Log::INFO, "Disk '" + std::string(DISK_NAME) + "' has been loaded"));
     print_super_block();
+    #if _DEBUG_
     print_fat_table();
+    #endif
 }
 
 void FAT32::load_superblock() noexcept {
@@ -266,6 +273,11 @@ void FAT32::load_superblock() noexcept {
 void FAT32::load_fat_table() noexcept {
     m_disk->seek(m_superblock.fat_table_addr);
     m_disk->read(m_fat_table, sizeof(uint32_t), CLUSTER_AMT);
+
+    for(int i = m_superblock.data.cluster_n - 1; i >= 0; i--) {
+        if(m_fat_table[i] == UNALLOCATED_CLUSTER)
+            m_free_clusters->insert(i);
+    }
 }
 
 uint32_t FAT32::insert_dir(dir_t & curr_dir, const char* dir_name) noexcept {
@@ -443,10 +455,8 @@ int32_t FAT32::store_file(const char* data) noexcept {
     uint32_t* clu_list = (uint32_t*)malloc(sizeof(uint32_t) * amt_of_clu_needed);
     memset(clu_list, 0, amt_of_clu_needed);
 
-    uint64_t last_fnd_clu= 0;
     for (int i = 0; i < amt_of_clu_needed; i++) {
-        clu_list[i] = attain_clu(last_fnd_clu);
-        last_fnd_clu = clu_list[i];
+        clu_list[i] = attain_clu();
     }
 
     first_cluster = clu_list[0];
@@ -517,6 +527,7 @@ void FAT32::delete_entry(dir_entr_ret_t& entry) noexcept {
 
     for (int i = 0; i < entry_alloc_clu.size(); i++) {
         m_fat_table[entry_alloc_clu[i]] = UNALLOCATED_CLUSTER;
+        m_free_clusters->insert(entry_alloc_clu[i]);
     }
 
     rm_entr_mem(*(entry.m_dir), entry.m_entry->dir_entry_name);
@@ -573,27 +584,15 @@ FAT32::dir_entr_ret_t* FAT32::parsePath(std::vector<std::string>&path, uint8_t s
     return ret;
 }
 
-uint32_t FAT32::attain_clu(uint64_t clu_index) const noexcept {
-    uint32_t rs = 0;
-    for (int i = clu_index; i < CLUSTER_AMT; i++) {
-        if (m_fat_table[i] == UNALLOCATED_CLUSTER) {
-            rs = i;
-            m_fat_table[rs] = ALLOCATED_CLUSTER;
-            break;
-        }
-    }
+uint32_t FAT32::attain_clu() const noexcept {
+    uint32_t rs = *m_free_clusters->begin();
+    m_fat_table[rs] = ALLOCATED_CLUSTER;
+    m_free_clusters->erase(m_free_clusters->begin());
     return rs;
 }
 
-uint32_t FAT32::n_free_clusters(const uint32_t & req) const noexcept {
-    uint32_t amt = 0;
-    for (int i = 0; i < CLUSTER_AMT; i++) {
-        if (m_fat_table[i] == UNALLOCATED_CLUSTER)
-            amt++;
-        if (amt >= req)
-            break;
-    }
-    return amt == req ? 1 : 0;
+uint32_t FAT32::n_free_clusters(const uint32_t& req) const noexcept {
+    return m_free_clusters->size() >= req ? 1 : 0;
 }
 
 std::vector<uint32_t> FAT32::get_list_of_clu(const uint32_t & start_clu) noexcept {

@@ -21,9 +21,8 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_RECOMMENDED_CLU_AMT   (1000)
 #define CFG_USER_SPACE_SIZE       (GB(2))
-#define CFG_CLUSTER_SIZE          (CFG_USER_SPACE_SIZE / CFG_RECOMMENDED_CLU_AMT)
+#define CFG_CLUSTER_SIZE          (CFG_USER_SPACE_SIZE / (KB(2)))
 
 // RFS
 #define CFG_SOCK_OPEN             (uint8_t)1
@@ -34,8 +33,8 @@
 #define CFG_PACKET_SIGNATURE      (char*)"[_VFS_]\0"
 #define CFG_PACKET_SIGNATURE_SIZE (strlen(CFG_PACKET_SIGNATURE))
 #define CFG_PACKET_SIZE           (size_t)1024
-#define CFG_FLAGS_BUFFER_SIZE     (size_t)50
-#define CFG_PAYLOAD_SIZE          (size_t)250
+#define CFG_FLAGS_BUFFER_SIZE     (size_t)100
+#define CFG_PAYLOAD_SIZE          (size_t)500
 #define CFG_PACKET_HASH_SIZE      (size_t)10
 #define CFG_INVALID_PROTOCOL      LOG_str(Log::SERVER, "Invalid protocol, closing connection..")
 

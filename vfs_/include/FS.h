@@ -10,7 +10,7 @@ class FS {
 
 public:
     std::string convert_size(const uint64_t&) const noexcept;
-    FILE* get_file_handlr(const char* file_path) noexcept;
+    FILE* get_file_handlr(const char* file_path, char* type = "rb+") noexcept;
     void get_ext_file_buffer(const char* file_path, char*&) noexcept;
     void store_ext_file_buffer(const char* file_path, char*&, uint64_t size) noexcept;
 };
