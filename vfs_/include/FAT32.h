@@ -66,7 +66,7 @@ private:
         dir_entry_t* dir_entries;
     } dir_t;
 
-    struct dir_entr_ret_t {
+    typedef struct __attribute__((packed)) dir_entr_ret_t {
         dir_t* m_dir;
         dir_entry_t* m_entry;
 

@@ -239,7 +239,7 @@ void FAT32::save_dir(dir_t &directory) noexcept {
 
     for (int i = 0; i < alloc_clu.size(); i++) {
         m_fat_table[alloc_clu[i]] = UNALLOCATED_CLUSTER;
-        m_free_clusters->insert(i);
+        m_free_clusters->insert(alloc_clu[i]);
     }
 
     store_dir(directory);

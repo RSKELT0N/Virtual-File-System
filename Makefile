@@ -4,7 +4,7 @@
 #########################
 CXX      := g++ -std=gnu++17
 TARGET   := filesystem
-CXXFLAGS := -w -g
+CXXFLAGS := -w
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := vfs_/src
 BIN      := bin
