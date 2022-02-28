@@ -143,8 +143,7 @@ void VFS::rm_disk(std::vector<std::string>& parts) {
     if(mnted_system->fs)
         if(disks->find(parts[2])->second.fs == mnted_system->fs)
             umnt_disk(parts); // erases mounted system information, if disk deleted is mounted.
-        
-
+            
     disks->erase(parts[2]); // deletes file system, on heap.
 }
 

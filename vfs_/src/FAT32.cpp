@@ -14,8 +14,8 @@ FAT32::FAT32(const char* disk_name) {
     std::string cmpl = "disks/" + std::string(DISK_NAME);
     FAT32::PATH_TO_DISK = cmpl.c_str();
 
-    if (STORAGE_SIZE > (1ULL << 32)) {
-        BUFFER << (LOG_str(Log::ERROR_, "maximum storage can only be 4gb"));
+    if (STORAGE_SIZE > GB(4)) {
+        LOG(Log::ERROR_, "maximum storage can only be 4gb");
     }
 
     m_disk = new Disk();
@@ -25,7 +25,7 @@ FAT32::FAT32(const char* disk_name) {
 FAT32::~FAT32() {
     free(m_fat_table);
     delete m_free_clusters;
-    //m_disk->rm();
+    m_disk->rm();
     delete (Disk*)m_disk;
     delete m_root;
     if (m_curr_dir != m_root)
@@ -131,22 +131,17 @@ void FAT32::store_fat_table() noexcept {
 }
 
 void FAT32::store_dir(dir_t & directory)  noexcept {
-    // ensuring header data is able to fit within a cluster size
+
     if (CLUSTER_SIZE < sizeof(directory.dir_header) || CLUSTER_SIZE < sizeof(dir_entry_t)) {
         BUFFER << (LOG_str(Log::ERROR_, "Insufficient memory to store header data/dir entry for directory"));
         return;
     }
-
-    // //////////////////////////////////////////////////////////////////////////////////////////////
-    // initialise variables for workout within cluster size
 
     uint16_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(directory.dir_header)) / sizeof(dir_entry_t);
     uint16_t remain_entries = (first_clu_entry_amt >= directory.dir_header.dir_entry_amt) ? 0 : (directory.dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
     uint16_t amt_of_entry_per_clu = 0;
     uint16_t entries_written = 0;
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////
-    // get first cluster and store header data within
     if (!n_free_clusters(1)) {
         BUFFER << (LOG_str(Log::ERROR_, "amount of clusters needed is not valid"));
         return;
@@ -168,8 +163,6 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
         num_of_clu_needed = 1;
     else num_of_clu_needed = (uint16_t)((double)remain_entries / (double)amt_of_entry_per_clu);
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////
-    // write entries in first cluster index
     for (int i = 0; i < min_(directory.dir_header.dir_entry_amt, first_clu_entry_amt); i++) {
         size_t addr_offset = (ROOT_START_ADDR + (first_clu_index * CLUSTER_SIZE) + sizeof(dir_header_t));
 
@@ -177,8 +170,6 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
         m_disk->write((void*)&directory.dir_entries[i], sizeof(dir_entry_t), 1);
         entries_written += 1;
     }
-    // /////////////////////////////////////////////////////////////////////////////////////////////
-    // add remaining entries within available clusters, up until last cluster
 
     if (remain_entries == 0) {
         m_fat_table[first_clu_index] = EOF_CLUSTER;
@@ -214,22 +205,15 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
         entries_written += amt_of_entry_per_clu;
     }
 
-
-    // //////////////////////////////////////////////////////////////////////////////////////////////
-    // write remaining entries towards last cluster
-
     m_disk->seek(ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[num_of_clu_needed - 1]));
     m_disk->write((void*)&directory.dir_entries[entries_written], sizeof(dir_entry_t), remain_entries);
     fflush(((Disk*)m_disk)->get_file());
-    // /////////////////////////////////////////////////////////////////////////////////////////////
-    // fill in fat_table
 
     m_fat_table[first_clu_index] = clu_list[0];
     for (int i = 0; i < num_of_clu_needed; i++)
         m_fat_table[clu_list[i]] = clu_list[i + 1];
     m_fat_table[clu_list[num_of_clu_needed - 1]] = EOF_CLUSTER;
-    // /////////////////////////////////////////////////////////////////////////////////////////////
-    // free heap allocated memory and store unsaved structures onto disk
+
     free(clu_list);
     store_fat_table();
 }
@@ -271,7 +255,7 @@ void FAT32::load_fat_table() noexcept {
 
     for(int i = m_superblock.data.cluster_n - 1; i >= 0; i--) {
         if(m_fat_table[i] == UNALLOCATED_CLUSTER)
-            m_free_clusters->insert(i);
+            m_free_clusters->insert(m_fat_table[i]);
     }
 }
 
@@ -389,6 +373,10 @@ char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
 }
 
 int32_t FAT32::store_file(const char* data, uint32_t data_size) noexcept {
+    if(data_size > GB(4)) {
+        BUFFER << LOG_str(Log::WARNING, "Maximum file that can be stored is 4gb");
+        return -1;
+    }
 
     uint32_t sdata = data_size;
     uint32_t first_cluster = 0;
@@ -487,7 +475,7 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
 
     add_new_entry(curr_dir, name, start_clu, strlen(*buffer), 0);
     save_dir(curr_dir);
-    free(buffer);
+    free(*buffer);
 }
 
 void FAT32::delete_entry(dir_entr_ret_t& entry) noexcept {
@@ -629,8 +617,9 @@ void FAT32::cp_dir(dir_t& src, dir_t& dst) noexcept {
             delete dir_cp;
             continue;
         }
-        std::string buffer = read_file(src, src.dir_entries[i].dir_entry_name);
-        insert_int_file(dst, buffer.c_str(), src.dir_entries[i].dir_entry_name);
+        char* buffer = read_file(src, src.dir_entries[i].dir_entry_name);
+        insert_int_file(dst, buffer, src.dir_entries[i].dir_entry_name);
+        free(buffer);
     }
 }
 
@@ -688,8 +677,9 @@ void FAT32::cp(const char* src, const char* dst) noexcept {
         delete src_dir;
         delete dst_dir;
     } else {
-        std::string buffer = read_file(*dsrc->m_dir, dsrc->m_entry->dir_entry_name);
-        insert_int_file(*ddst->m_dir, buffer.c_str(), entr_name);
+        char* buffer = read_file(*dsrc->m_dir, dsrc->m_entry->dir_entry_name);
+        insert_int_file(*ddst->m_dir, buffer, entr_name);
+        free(buffer);
     }
 
     save_dir(*ddst->m_dir);
@@ -812,7 +802,7 @@ void FAT32::cat(const char* path) noexcept {
         return;
     }
 
-    char* buffer = &(*read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str()));
+    char* buffer = read_file(*entr->m_dir, tokens[tokens.size() - 1].c_str());
     std::string file_name = tokens[tokens.size() - 1];
     BUFFER << "\nFile: " << file_name.c_str() << "\nSize: " << strlen(buffer) << "b\n------------\n" << buffer << "\n";
     free(buffer);

@@ -18,7 +18,7 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_USER_SPACE_SIZE       (MB(500))
+#define CFG_USER_SPACE_SIZE       (GB(3))
 #define CFG_CLUSTER_SIZE          (CFG_USER_SPACE_SIZE / (KB(2)))
 
 // RFS

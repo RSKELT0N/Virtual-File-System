@@ -123,6 +123,17 @@ void Server::add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept 
     clients->push_back(std::make_pair(clients->size(), tmp));
     tmp->thrd = new std::thread(&Server::handle, this, (tmp));
     tmp->thrd->detach();
+
+    BUFFER.hold_buffer();
+
+    if(VFS::get_vfs()->is_mnted()) {
+        BUFFER << LOG_str(Log::INFO, "RFS has a mounted disk");
+        ((FAT32*)VFS::get_vfs()->get_mnted_system()->fs)->print_super_block();
+        BUFFER << "\n";
+    } else BUFFER << LOG_str(Log::INFO, "RFS has no mounted disk");
+
+    send_to_client(*tmp);
+    BUFFER.release_buffer();
 }
 
 void Server::handle(client_t* client) noexcept {

@@ -44,6 +44,8 @@ void Buffer::hold_buffer() noexcept {
 void Buffer::release_buffer() noexcept {
     mLock->unlock();
     mStream->clear();
+    delete mStream;
+    mStream = new std::string();
 }
 
 const char* Buffer::retain_buffer() noexcept {
