@@ -8,11 +8,9 @@
 <br />
 
 # What is it?
-<pre>
-An emulation of Virtual File System that allows the user to create and mount Internal/Remote file systems. Disks that are mounted are stored within 'disks/' folder, written as binary in a FAT32 implementation with the use of a superblock, fat table and userspace which are separated by clusters. Defined szies of these segments are defined within 'config.h' and can be manipulated to the user's preference.
+> An emulation of Virtual File System that allows the user to create and mount Internal/Remote file systems. Disks that are mounted are stored within 'disks/' folder, written as binary in a FAT32 implementation with the use of a superblock, fat table and userspace which are separated by clusters. Defined szies of these segments are defined within 'config.h' and can be manipulated to the user's preference.
 
-Overall, hopefully this program will allow the user to store folders/files within a binary disk and perform operations on them locally or remotely.
-</pre>
+> Overall, hopefully this program will allow the user to store folders/files within a binary disk and perform operations on them locally or remotely.
 <br />
 
 # Commands
