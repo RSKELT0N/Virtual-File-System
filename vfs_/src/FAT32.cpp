@@ -137,10 +137,10 @@ void FAT32::store_dir(dir_t & directory)  noexcept {
         return;
     }
 
-    uint16_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(directory.dir_header)) / sizeof(dir_entry_t);
-    uint16_t remain_entries = (first_clu_entry_amt >= directory.dir_header.dir_entry_amt) ? 0 : (directory.dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
-    uint16_t amt_of_entry_per_clu = 0;
-    uint16_t entries_written = 0;
+    uint32_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(directory.dir_header)) / sizeof(dir_entry_t);
+    uint32_t remain_entries = (first_clu_entry_amt >= directory.dir_header.dir_entry_amt) ? 0 : (directory.dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
+    uint32_t amt_of_entry_per_clu = 0;
+    uint32_t entries_written = 0;
 
     if (!n_free_clusters(1)) {
         BUFFER << (LOG_str(Log::ERROR_, "amount of clusters needed is not valid"));
@@ -289,9 +289,9 @@ FAT32::dir_t* FAT32::read_dir(const uint32_t & start_clu) noexcept {
     m_disk->seek(dir_start_addr);
     m_disk->read((void*)&ret->dir_header, sizeof(dir_header_t), 1);
 
-    uint16_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(ret->dir_header)) / sizeof(dir_entry_t);
-    uint16_t remain_entries = (first_clu_entry_amt >= ret->dir_header.dir_entry_amt) ? 0 : (ret->dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
-    uint16_t entries_read = 0;
+    uint32_t first_clu_entry_amt = (CLUSTER_SIZE - sizeof(ret->dir_header)) / sizeof(dir_entry_t);
+    uint32_t remain_entries = (first_clu_entry_amt >= ret->dir_header.dir_entry_amt) ? 0 : (ret->dir_header.dir_entry_amt - (uint32_t)first_clu_entry_amt);
+    uint32_t entries_read = 0;
 
     //allocate memory to ret(dir_t) entries due to dir header data.
     ret->dir_entries = (dir_entry_t*)malloc(sizeof(dir_entry_t) * ret->dir_header.dir_entry_amt);

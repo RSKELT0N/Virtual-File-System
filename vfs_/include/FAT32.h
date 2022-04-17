@@ -66,12 +66,12 @@ private:
         dir_entry_t* dir_entries;
     } dir_t;
 
-    typedef struct __attribute__((packed)) dir_entr_ret_t {
+    struct dir_entr_ret_t {
         dir_t* m_dir;
         dir_entry_t* m_entry;
 
         dir_entr_ret_t(dir_t* dir, dir_entry_t* entry) : m_dir(dir), m_entry(entry) { };
-    };
+    } __attribute__((packed));
 
 public:
     explicit FAT32(const char* disk_name);

@@ -2,9 +2,9 @@
 #########################
 # variables
 #########################
-CXX      := g++ -std=gnu++17
+CXX      := g++
 TARGET   := filesystem
-CXXFLAGS := -w -g
+CXXFLAGS := -std=gnu++17 -s
 DEPFLAGS := -MMD -MF $(@:.o=.d)
 SRC      := vfs_/src
 BIN      := bin

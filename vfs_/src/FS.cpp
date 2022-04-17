@@ -64,13 +64,13 @@ long FS::get_file_size(const char* path) noexcept {
 }
 
 void FS::store_ext_file_buffer(const char* path, char*& payload, uint64_t size) noexcept {
-    FILE* file = get_file_handlr(path, "w+");
+    FILE* file = get_file_handlr(path, (char*)"w+");
 
     ftruncate(fileno(file), size);
     rewind(file);
     fclose(file);
 
-    FILE* file_ = get_file_handlr(path, "r+");
+    FILE* file_ = get_file_handlr(path, (char*)"r+");
     fwrite(payload, size, sizeof(char), file);
     fclose(file);
 }

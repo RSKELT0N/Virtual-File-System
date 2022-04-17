@@ -240,7 +240,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
         }
     }
 
-    char* payload = "\0";
+    char* payload = (char*)"\0";
     if(container->info.p_count != 0) {
         retain_payloads(payload, *container->payloads);
     }
@@ -320,5 +320,7 @@ const char* Server::print_logs() const noexcept {
         BUFFER << "[" << i << "] -> " << logs[i] << "\n";
     }
     BUFFER << "--------------\n";
-    return tmp;
+
+    const char* ret = tmp;
+    return ret;
 }
