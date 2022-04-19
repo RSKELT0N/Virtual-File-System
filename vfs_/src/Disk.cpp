@@ -69,7 +69,7 @@ DiskDriver::ret_t Disk::write(const void *ptr, const size_t &size, const uint32_
 }
 
 DiskDriver::ret_t Disk::seek(const long &offset) {
-    uint8_t val = fseek(file, offset, SEEK_SET);
+    int8_t val = fseek(file, offset, SEEK_SET);
 
     if(val == -1)
         BUFFER << LOG_str(Log::ERROR_, "Error setting offset address from 'SEEK_SET' within disk.");
@@ -78,7 +78,7 @@ DiskDriver::ret_t Disk::seek(const long &offset) {
 }
 
 DiskDriver::ret_t Disk::truncate(const off_t &size) {
-    uint8_t val = ftruncate(fileno(file), size);
+    int8_t val = ftruncate(fileno(file), size);
 
     if(val == -1)
         BUFFER << LOG_str(Log::ERROR_, "Error truncating the file");
@@ -87,7 +87,7 @@ DiskDriver::ret_t Disk::truncate(const off_t &size) {
 }
 
 DiskDriver::ret_t Disk::rm() {
-    uint8_t val = std::remove(cmpl_path_to_file.c_str());
+    int8_t val = std::remove(cmpl_path_to_file.c_str());
     if(val != 0)
         BUFFER << LOG_str(Log::WARNING, "Cant remove file(" +  cmpl_path_to_file + ")");
 

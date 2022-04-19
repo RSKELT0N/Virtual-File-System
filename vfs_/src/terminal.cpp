@@ -94,6 +94,9 @@ void terminal::interpret_ext(VFS::system_cmd cmd, cmd_environment cmd_env, std::
             case VFS::system_cmd::vfs_: m_vfs->control_vfs(args);
             determine_env(args[0].c_str());
             break;
+
+            default:
+                break;
         }
     } else if(cmd_env == EXTERNAL) {
             (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args, "");

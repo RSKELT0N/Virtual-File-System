@@ -30,45 +30,45 @@ public:
 private:
 
     struct metadata_t {
-        char disk_name[DISK_NAME_LENGTH];
-        int64_t disk_size;
-        uint32_t superblock_size;
-        uint64_t fat_table_size;
-        int64_t user_size;
-        uint32_t cluster_size;
-        uint32_t cluster_n;
+        char disk_name[DISK_NAME_LENGTH] = {};
+        int64_t disk_size = {};
+        uint32_t superblock_size = {};
+        uint64_t fat_table_size = {};
+        int64_t user_size = {};
+        uint32_t cluster_size = {};
+        uint32_t cluster_n = {};
     } __attribute__((packed));
 
     typedef struct __attribute__((packed)) {
-        metadata_t data;
-        uint32_t superblock_addr;
-        uint32_t fat_table_addr;
-        uint32_t root_dir_addr;
+        metadata_t data = {};
+        uint32_t superblock_addr = {};
+        uint32_t fat_table_addr = {};
+        uint32_t root_dir_addr = {};
     } superblock_t;
 
     typedef struct __attribute__((packed)) {
-        char dir_name[DIR_NAME_LENGTH];
-        uint32_t dir_entry_amt;
-        uint32_t start_cluster_index;
-        uint32_t parent_cluster_index;
+        char dir_name[DIR_NAME_LENGTH] = {};
+        uint32_t dir_entry_amt = {};
+        uint32_t start_cluster_index = {};
+        uint32_t parent_cluster_index = {};
     } dir_header_t;
 
     typedef struct __attribute__((packed)) {
-        char dir_entry_name[DIR_NAME_LENGTH];
-        uint32_t start_cluster_index;
+        char dir_entry_name[DIR_NAME_LENGTH] = {};
+        uint32_t start_cluster_index = {};
 
-        uint64_t dir_entry_size;
-        uint8_t is_directory;
+        uint64_t dir_entry_size = {};
+        uint8_t is_directory = {};
     } dir_entry_t;
 
     typedef struct __attribute__((packed)) {
-        dir_header_t dir_header;
-        dir_entry_t* dir_entries;
+        dir_header_t dir_header = {};
+        dir_entry_t* dir_entries = {};
     } dir_t;
 
     struct dir_entr_ret_t {
-        dir_t* m_dir;
-        dir_entry_t* m_entry;
+        dir_t* m_dir = {};
+        dir_entry_t* m_entry = {};
 
         dir_entr_ret_t(dir_t* dir, dir_entry_t* entry) : m_dir(dir), m_entry(entry) { };
     } __attribute__((packed));
@@ -112,7 +112,7 @@ private:
     void load_superblock() noexcept;
     void load_fat_table() noexcept;
 
-    int32_t store_file(const char* path, uint32_t data_size) noexcept;
+    int32_t store_file(const char* path, uint64_t data_size) noexcept;
 
     uint32_t insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
     void insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept;

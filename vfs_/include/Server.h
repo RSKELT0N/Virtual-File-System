@@ -31,24 +31,24 @@ class Server : public RFS {
 
 private:
 	struct connect_t {
-		uint32_t m_port;
-		int m_socket_fd;
-		sockaddr_in hint;
+		uint32_t m_port = {};
+		int m_socket_fd = {};
+		sockaddr_in hint = {};
 		int opt = 1;
 	}conn;
 
     struct info_t {
-        uint8_t state;
-        uint8_t users_c;
-        uint8_t max_usr_c;
+        uint8_t state = {};
+        uint8_t users_c = {};
+        uint8_t max_usr_c = {};
     }info;
 
     struct client_t {
-        uint8_t state;
-        int sock_fd;
-        sockaddr_in hint;
-        const char* ip;
-        std::thread* thrd;
+        uint8_t state = {};
+        int sock_fd = {};
+        sockaddr_in hint = {};
+        const char* ip = {};
+        std::thread* thrd = {};
         ~client_t() {if(thrd) delete thrd; close(sock_fd);}
     };
 

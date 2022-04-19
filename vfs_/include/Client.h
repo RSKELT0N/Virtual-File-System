@@ -24,14 +24,14 @@ class Client : public RFS {
     
 public:
     struct info_t {
-        uint8_t state;
+        uint8_t state = {};
     }info;
     
     struct connect_t {
-        int32_t m_port;
-        const char* m_addr;
-        int m_socket_fd;
-        sockaddr_in hint;
+        int32_t m_port = {};
+        const char* m_addr = {};
+        int m_socket_fd = {};
+        sockaddr_in hint = {};
     }conn;
 
 public:

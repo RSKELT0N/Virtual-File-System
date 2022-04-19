@@ -41,23 +41,23 @@ public:
     static constexpr const char* syscmd_str[] = {"vfs", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
 
     struct flag_t {
-         const char* name;
+         const char* name = {};
          void (VFS::*func)(std::vector<std::string>&) = NULL;
-         const char* desc;
+         const char* desc = {};
         flag_t(const char* nm, void(VFS::*ptr)(std::vector<std::string>&), const char* dsc) : name(nm), func(ptr), desc(dsc) {}
     };
 
     struct cmd_t {
-        system_cmd cmd;
-        std::vector<flag_t> flags;
-        const char* desc;
+        system_cmd cmd = {};
+        std::vector<flag_t> flags = {};
+        const char* desc = {};
     };
 
     struct system_t {
 
         struct sock_conn_t {
-            const char* addr;
-            int32_t port;
+            const char* addr = {};
+            int32_t port = {};
         };
 
         const char* name;
@@ -67,7 +67,7 @@ public:
         void (VFS::*access)(system_cmd cmd, std::vector<std::string>& args, const char*);
 
         ~system_t();
-        system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&, const char*), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
+            system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&, const char*), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
     };
 
 private:

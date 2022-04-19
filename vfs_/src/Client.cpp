@@ -64,6 +64,7 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
     get_payload(str_cmd, args, *payload);
     pcontainer_t* container = generate_container(cmd, args, *payload);
     free(payload);
+    free(*payload);
 
     // Serialize packet.
     char buffer[BUFFER_SIZE];

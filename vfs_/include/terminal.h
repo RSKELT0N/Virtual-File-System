@@ -20,7 +20,7 @@ public:
     };
 
     typedef struct {
-        VFS::system_cmd cmd_name;
+        VFS::system_cmd cmd_name = {};
         VFS::system_cmd (terminal::*valid)(std::vector<std::string>& parts);
     } valid_cmd_t;
 

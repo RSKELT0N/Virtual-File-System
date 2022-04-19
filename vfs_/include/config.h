@@ -7,10 +7,14 @@
 
 // ~~~~~~~~~~~ Config ~~~~~~~~~~
 
-/* TODO:
-    - add mutex for functions that can be accessed by multiple users.
-    - Validate that no data racing can take place and multiple users can access a mounted disk at once with mutex locks
-     in place and correct buffering within the correct area.
+/* TODO (for future builds):
+    - Clean code for better efficiency, making sure no redundant code exists in src.
+    - Add functionality to prompt user with their own system, rather a segment of a singleton when using rfs. (Will allow user to only see their own disks created under their own account).
+    - This will avoid data racing as a whole, allow disks to be shared with more than one user. Each remotely logged in user, will see their own version of the vfs.
+    - Add a better protocol for edge case requests through server and client. Such as exporting file. (Makes messy code).
+    - Add better atmoic locking to ensure that no data racing exists.
+    - Segment fread into buffer to reduce ram usage. (As well as other parts that store large amount of bytes into local/remote memory).
+    - Ensure project compiles on windows with new features added.
 */
 
 #define BUFFER     (*Buffer::get_buffer())

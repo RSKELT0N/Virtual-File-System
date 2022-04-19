@@ -372,7 +372,7 @@ char* FAT32::read_file(dir_t & dir, const char* entry_name) noexcept {
     return buffer;
 }
 
-int32_t FAT32::store_file(const char* data, uint32_t data_size) noexcept {
+int32_t FAT32::store_file(const char* data, uint64_t data_size) noexcept {
     if(data_size > GB(4)) {
         BUFFER << LOG_str(Log::WARNING, "Maximum file that can be stored is 4gb");
         return -1;
@@ -443,7 +443,7 @@ int32_t FAT32::store_file(const char* data, uint32_t data_size) noexcept {
 }
 
 void FAT32::insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept {
-    uint32_t sbuffer = strlen(buffer);
+    uint64_t sbuffer = strlen(buffer);
     uint32_t start_clu = store_file(buffer, sbuffer);
 
     if (start_clu == -1) {
@@ -466,7 +466,7 @@ void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name
 
     get_ext_file_buffer(path, *buffer);
     long size = get_file_size(path); 
-    uint32_t start_clu = store_file(*buffer, size);
+    uint32_t start_clu = store_file(*buffer, (uint64_t)size);
 
     if (start_clu == -1) {
         BUFFER << (LOG_str(Log::WARNING, "file could not be stored"));

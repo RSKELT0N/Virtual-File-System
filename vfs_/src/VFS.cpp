@@ -120,7 +120,7 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
     this->mnted_system->fs_type = disks->find(parts[1])->second.fs_type;
     this->mnted_system->fs      = *&(disks->find(parts[1])->second.fs);
 
-    if(this->mnted_system->fs_type == "rfs")
+    if(strcmp(this->mnted_system->fs_type, "rfs") == 0)
         this->mnted_system->access = &VFS::rfs_cmd_func;
     else this->mnted_system->access  = &VFS::ifs_cmd_func;
 }
@@ -174,15 +174,16 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
     }
 
     for(auto i = disks->begin(); i != disks->end(); i++) {
-        if(i->second.fs_type == "rfs") {
+        if(strcmp(i->second.fs_type, "rfs") == 0) {
             BUFFER << " -> (name)" << i->first.c_str() << " : (address)" << i->second.conn.addr << ", (port)" << i->second.conn.port;
             goto mount;
         }
         BUFFER << " -> (name)" << i->first.c_str() << " : (filesystem)" << i->second.fs_type;
 
         mount:
-        if(strcmp(mnted_system->name, i->first.c_str()) == 0)
-            BUFFER << " %s", "[ Mounted ]";
+        if(strcmp(mnted_system->name, i->first.c_str()) == 0) {
+            BUFFER << " ~ [ Mounted ]";
+        }
 
         BUFFER << "\n";
     }

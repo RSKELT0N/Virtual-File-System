@@ -14,9 +14,9 @@ class RFS : public FS {
 protected:
     struct packet_t {
         char signature[CFG_PACKET_SIGNATURE_SIZE];
-        uint64_t size;
-        uint64_t p_count;  
-        uint8_t cmd;
+        uint64_t size = {};
+        uint64_t p_count = {};
+        uint8_t cmd = {};
         char hash[CFG_PACKET_HASH_SIZE];
         char flags[CFG_FLAGS_BUFFER_SIZE];
     } __attribute__((packed));

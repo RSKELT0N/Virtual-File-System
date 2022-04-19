@@ -6,7 +6,7 @@
 class DiskDriver {
 
 protected:
-    typedef enum : uint16_t __attribute__((packed)) {
+    typedef enum : uint16_t {
         ERROR = 0xFFFF,
         VALID = 0X0000
     } ret_t;
