@@ -1,15 +1,5 @@
 #include "../include/Client.h"
 
-void printProgress(double percentage) {
-    int val = (int) (percentage * 100);
-    int lpad = (int) (percentage * PBWIDTH);
-    int rpad = PBWIDTH - lpad;
-    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
-    fflush(stdout);
-}
-
-extern constexpr unsigned int hash(const char *s, int off = 0);
-
 Client::Client(const char* addr, const int32_t& port) {
     conn.m_addr = addr;
     conn.m_port = port;
@@ -19,8 +9,6 @@ Client::Client(const char* addr, const int32_t& port) {
 
 Client::~Client() {
     info.state = CFG_SOCK_CLOSE;
-    close(conn.m_socket_fd);
-    BUFFER << "Deleted Client\n";
 }
 
 void Client::init() noexcept {
@@ -30,7 +18,6 @@ void Client::init() noexcept {
     BUFFER << LOG_str(Log::INFO, "You have successfully connected to the VFS: [address : " + std::string(conn.m_addr) + "]");
     recv_ = std::thread(&Client::run, this);
     recv_.detach();
-
 }
 
 void Client::define_fd() noexcept {
@@ -53,18 +40,24 @@ void Client::add_hint() noexcept {
 
 void Client::connect() noexcept {
     if(::connect(conn.m_socket_fd, (sockaddr*)&conn.hint, sizeof(conn.hint)) == -1) {
-        BUFFER << LOG_str(Log::ERROR_, "Could not connect to VFS, please try again");
-        return;
+        LOG(Log::ERROR_, "Could not connect to VFS, please try again or check IP/ Port specified. Make sure server, is initialised");
     }
 }
 
+void Client::run() noexcept {
+    while(info.state == CFG_SOCK_OPEN) {
+        receive_from_server();
+    }
+    close(conn.m_socket_fd);
+    VFS::get_vfs()->control_vfs({"umnt"});
+    BUFFER << (LOG_str(Log::SERVER, "Disconnected from server, either it has crashed or closed off it's connection"));
+}
+
 void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::string>& args) noexcept {
-    char** payload = (char**)malloc(sizeof(char*));
-    *payload = nullptr;
-    get_payload(str_cmd, args, *payload);
-    pcontainer_t* container = generate_container(cmd, args, *payload);
-    free(payload);
-    free(*payload);
+    std::byte* payload = nullptr;
+    uint64_t size = get_payload(str_cmd, args, payload);
+    pcontainer_t* container = generate_container(cmd, args, payload, size);
+    delete payload;
 
     // Serialize packet.
     char buffer[BUFFER_SIZE];
@@ -85,16 +78,91 @@ void Client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
         send(buffer, sizeof(payload_t));
         data_sent += container->payloads->at(i).header.size;
 
-        printProgress((double)data_sent/data_size);
+        lib_::printProgress((double)data_sent/data_size);
     }
     if(data_sent != 0) {
-        printProgress((double)data_sent/data_size);
+        lib_::printProgress((double)data_sent/data_size);
         printf("\n");
     }
 
     //packet has been sent.
     delete container;
 }
+
+void Client::receive_from_server() noexcept {
+    fd_set master_set;
+    struct timeval tv;
+
+    FD_ZERO(&master_set);
+    FD_SET(conn.m_socket_fd, &master_set);
+    tv.tv_sec = SOCKET_ACCEPT_TIME;
+
+    select(conn.m_socket_fd + 1, &master_set, NULL, NULL, &tv);
+        
+    if(FD_ISSET(conn.m_socket_fd, &master_set)) {
+        char buffer[BUFFER_SIZE];
+        memset(buffer, 0, BUFFER_SIZE);
+
+        receive(buffer, sizeof(packet_t));
+            
+        pcontainer_t* container = new pcontainer_t;
+        deserialize_packet(container->info, buffer);
+
+        if(process_packet(container->info) == 0) {
+            ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+            info.state = CFG_SOCK_CLOSE;
+            delete container;
+            return;
+        }
+        
+        payload_t tmp_payload;
+        for(int i = 0; i < container->info.p_count; i++) {
+            memset(buffer, 0, BUFFER_SIZE);
+            receive(buffer, sizeof(payload_t));
+            deserialize_payload(tmp_payload, buffer);
+            
+            if(process_payload(container->info, tmp_payload) == 0) {
+                ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
+                info.state = CFG_SOCK_CLOSE;
+                delete container;
+                return;
+            }
+
+            container->payloads->push_back(tmp_payload);
+        }
+
+        interpret_input(*container);
+        delete container;
+    }
+}
+
+void Client::interpret_input(const pcontainer_t& container) noexcept {
+    BUFFER.hold_buffer();
+
+    uint64_t payload_size = 0;
+
+    for(int i = 0; i < container.info.p_count; i++)
+        payload_size += container.payloads->at(i).header.size;
+
+    char* buffer = (char*)malloc(sizeof(char) * payload_size);
+    memset(buffer, 0, payload_size);
+
+    uint64_t data_copied = 0;
+    for(int i = 0; i < container.info.p_count; i++) {
+        memcpy(&(buffer[data_copied]), container.payloads->at(i).payload, container.payloads->at(i).header.size);
+        data_copied += container.payloads->at(i).header.size;
+    }
+
+    buffer[data_copied] = '\0';
+    BUFFER << buffer;
+    memset(buffer, 0, payload_size);
+    free(buffer);
+
+    const char* str = BUFFER.retain_buffer();
+    printf("\r%s", str);
+    BUFFER.release_buffer();
+}
+
 
 void Client::send(const char* buffer, size_t buffer_size) noexcept {
     int number_of_bytes = {};
@@ -122,91 +190,20 @@ uint8_t Client::receive(char* buffer, size_t bytes) noexcept {
         if(bytes_received == -1) {
             BUFFER << (LOG_str(Log::WARNING, "Client was unable to read incoming data from mounted server"));
             return -1;
-        } else if (bytes_received == 0) {
-            info.state = CFG_SOCK_CLOSE;
-            VFS::get_vfs()->control_vfs({"umnt"});
-            BUFFER << (LOG_str(Log::SERVER, "Disconnected from server"));
-            return 0;
         }
     }
     return 1;
 }
 
-void Client::receive_from_server() noexcept {
-    char buffer[BUFFER_SIZE];
-    memset(buffer, 0, BUFFER_SIZE);
-
-    if(receive(buffer, sizeof(packet_t)) < 1)
-        return;
-        
-    pcontainer_t* container = new pcontainer_t;
-    deserialize_packet(container->info, buffer);
-
-    if(process_packet(container->info) == 0) {
-        ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
-        info.state = CFG_SOCK_CLOSE;
-        delete container;
-        return;
-    }
-    
-    payload_t tmp_payload;
-    for(int i = 0; i < container->info.p_count; i++) {
-        memset(buffer, 0, BUFFER_SIZE);
-        receive(buffer, sizeof(payload_t));
-        deserialize_payload(tmp_payload, buffer);
-        
-        if(process_payload(container->info, tmp_payload) == 0) {
-            ::send(conn.m_socket_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
-            info.state = CFG_SOCK_CLOSE;
-            delete container;
-            return;
-        }
-
-        container->payloads->push_back(tmp_payload);
-    }
-
-    interpret_input(*container);
-    delete container;
-}
-
-void Client::interpret_input(const pcontainer_t& container) noexcept {
-    BUFFER.hold_buffer();
-
-    uint64_t payload_size = 0;
-
-    for(int i = 0; i < container.info.p_count; i++)
-        payload_size += container.payloads->at(i).header.size;
-
-    char* buffer = (char*)malloc(sizeof(char) * payload_size);
-    memset(buffer, 0, payload_size);
-
-    uint64_t data_copied = 0;
-    for(int i = 0; i < container.info.p_count; i++) {
-        memcpy(&(buffer[data_copied]), container.payloads->at(i).payload, container.payloads->at(i).header.size);
-        data_copied += container.payloads->at(i).header.size;
-    }
-
-    buffer[data_copied] = '\0';
-    printf("%s\n", buffer);
-    memset(buffer, 0, payload_size);
-    free(buffer);
-    BUFFER.release_buffer();
-}
-
-void Client::run() noexcept {
-    while(info.state == CFG_SOCK_OPEN) {
-        receive_from_server();
-    }
-}
-
-void Client::get_payload(const char* cmd, std::vector<std::string>& args, char*& payload) noexcept {
+uint64_t Client::get_payload(const char* cmd, std::vector<std::string>& args, std::byte*& payload) noexcept {
+    uint64_t size = {};
     if(strcmp(cmd, "cp") == 0) {
         if(strcmp(args[0].c_str(), "imp") == 0)
-            FS::get_ext_file_buffer(args[1].c_str(), payload);
+            size = FS::get_ext_file_buffer(args[1].c_str(), payload);
     }
 
     if(payload == nullptr) {
-        payload = (char*)malloc(sizeof(char));
-        *payload = '\0';
+        payload = new std::byte;
     }
+    return size;
 }

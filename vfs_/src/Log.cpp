@@ -1,27 +1,9 @@
-//
-// Created by Ryan Skelton on 01/10/2020.
-//
-
 #include "../include/Log.h"
 
-std::vector<std::string> split(const char* line, char sep) noexcept {
-    std::vector<std::string> tokens;
-    std::stringstream ss(line);
-    std::string x;
-
-    while ((getline(ss, x, sep))) {
-        if (x != "")
-            tokens.push_back(x);
-    }
-    return tokens;
-}
 
 Log *Log::logInstance = NULL;
 
-Log::~Log()
-{
-    printf("Deleted Logger\n");
-}
+Log::~Log() {}
 
 Log *Log::getInstance()
 {

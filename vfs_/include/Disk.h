@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "DiskDriver.h"
+#include "Buffer.h"
 
 class Disk : public DiskDriver {
 

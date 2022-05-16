@@ -9,15 +9,10 @@
 #include <dirent.h>
 #include <unordered_map>
 
-#include "config.h"
-
-#include "FS.h"
-#include "IFS.h"
-#include "RFS.h"
-
-#include "FAT32.h"
 #include "Server.h"
 #include "Client.h"
+#include "FAT32.h"
+#include "lib.h"
 
 #define DEFAULT_FS (const char*)"fat32"
 
@@ -26,7 +21,6 @@ struct VFS {
 public:
     enum system_cmd {
         vfs_,
-        invalid,
         ls,
         mkdir,
         cd,
@@ -35,10 +29,14 @@ public:
         cp,
         mv,
         cat,
+        help,
+        clear,
+        invalid,
+        exit,
         internal
     };
 
-    static constexpr const char* syscmd_str[] = {"vfs", "invalid", "ls", "mkdir", "cd", "rm", "touch", "cp", "touch", "cp", "mv", "cat"};
+    static constexpr const char* syscmd_str[] = {"/vfs", "ls", "mkdir", "cd", "rm", "touch", "cp", "mv", "cat", "/help", "/clear", "/exit", "invalid"};
 
     struct flag_t {
          const char* name = {};
@@ -64,10 +62,10 @@ public:
         FS* fs = nullptr;
         const char* fs_type;
         sock_conn_t conn;
-        void (VFS::*access)(system_cmd cmd, std::vector<std::string>& args, const char*);
+        void (VFS::*access)(system_cmd cmd, std::vector<std::string>& args, const char*, uint64_t size);
 
         ~system_t();
-            system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&, const char*), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
+            system_t(const char* nme, FS* _fs, const char* type, void (VFS::*ptr)(VFS::system_cmd, std::vector<std::string>&, const char*, uint64_t size), sock_conn_t hint): name(nme), fs(_fs), fs_type(type), access(ptr), conn(hint) {};
     };
 
 private:
@@ -96,8 +94,8 @@ public:
     void control_vfs(const std::vector<std::string>&) noexcept;
     void control_ifs(std::vector<std::string>&) noexcept;
     void control_rfs(std::vector<std::string>&) noexcept;
-    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept;
-    void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept;
+    void ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer, uint64_t size) noexcept;
+    void rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer, uint64_t size) noexcept;
 
 public:
     void load_disks() noexcept;

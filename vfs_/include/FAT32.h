@@ -7,6 +7,7 @@
 
 #include "IFS.h"
 #include "Disk.h"
+#include "lib.h"
 
 #define abs_(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
 #define min_(a,b)            ((a) < (b) ? (a) : (b))
@@ -88,7 +89,7 @@ public:
     void cp(const char* src, const char* dst) noexcept override;
     void cp_imp(const char* src, const char* dst) noexcept override;
     void cp_exp(const char* src, const char* dst) noexcept override;
-    void touch(std::vector<std::string>& tokens, const char* buffer) noexcept override;
+    void touch(std::vector<std::string>& tokens, char* payload, uint64_t size) noexcept override;
     void cat(const char* path) noexcept override;
     void ls() noexcept override;
 
@@ -96,6 +97,7 @@ private:
     void set_up() noexcept;
     void init() noexcept;
     void load() noexcept;
+    int8_t check_config() noexcept;
 
     void create_disk() noexcept;
     void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint64_t& size, const uint8_t& is_dir) noexcept;
@@ -112,10 +114,10 @@ private:
     void load_superblock() noexcept;
     void load_fat_table() noexcept;
 
-    int32_t store_file(const char* path, uint64_t data_size) noexcept;
+    int32_t store_file(std::byte* path, uint64_t data_size) noexcept;
 
     uint32_t insert_dir(dir_t& curr_dir, const char* dir_name) noexcept;
-    void insert_int_file(dir_t& dir, const char* buffer, const char* name) noexcept;
+    void insert_int_file(dir_t& dir, std::byte* buffer, const char* name, size_t size) noexcept;
     void insert_ext_file(dir_t& dir, const char* path, const char* name) noexcept;
 
     void delete_entry(dir_entr_ret_t& entry) noexcept;
@@ -124,7 +126,7 @@ private:
     void cp_dir(dir_t& src, dir_t& dst) noexcept;
 
     dir_t* read_dir(const uint32_t& start_clu) noexcept;
-    char* read_file(dir_t& dir, const char* entry_name) noexcept;
+    size_t read_file(dir_t& dir, const char* entry_name, std::byte*& buffer) noexcept;
 
     uint32_t attain_clu() const noexcept;
     uint32_t n_free_clusters(const uint32_t& req) const noexcept;
@@ -143,13 +145,12 @@ public:
 private:
     const char* DISK_NAME;
     const char* PATH_TO_DISK;
-    static constexpr const char* DEFAULT_DISK = "disk.dat";
 
     static constexpr uint64_t USER_SPACE   = CFG_USER_SPACE_SIZE;
     static constexpr uint32_t CLUSTER_SIZE = CFG_CLUSTER_SIZE;
     static constexpr uint64_t CLUSTER_AMT  = USER_SPACE / CLUSTER_SIZE;
 
-    static constexpr uint64_t  STORAGE_SIZE          = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
+    static constexpr uint64_t STORAGE_SIZE           = (sizeof(superblock_t) + (sizeof(uint32_t) * CLUSTER_AMT)) + USER_SPACE;
     static constexpr uint32_t SUPERBLOCK_START_ADDR  = 0x00000000;
     static constexpr uint32_t FAT_TABLE_START_ADDR   = sizeof(superblock_t);
     static constexpr uint32_t FAT_TABLE_SIZE         = sizeof(uint32_t) * CLUSTER_AMT;

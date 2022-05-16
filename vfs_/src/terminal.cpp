@@ -1,37 +1,41 @@
 #include "../include/terminal.h"
 
-extern std::vector<std::string> split(const char* line, char sep) noexcept;
+VFS* terminal::m_vfs;
+terminal* terminal::m_terminal;
 
-constexpr unsigned int hash(const char *s, int off = 0) {
-    return !s[off] ? 5381 : (hash(s, off+1)*33) ^ s[off];
+void remote_interpret_cmd(VFS::system_cmd cmd, std::vector<std::string>& args, char*& payload, uint64_t size) noexcept {
+    terminal::get_instance()->translate_remote_cmd(cmd, args);
+    terminal::get_instance()->interpret_cmd(cmd, args, payload, size);
 }
 
-VFS* terminal::m_vfs;
-
 terminal::terminal() {
-    m_vfs = VFS::get_vfs();
+    sys_lock = new std::mutex();
     m_mnted_system = &(*m_vfs).get_mnted_system();
-    m_extern_cmds = new std::unordered_map<std::string, valid_cmd_t>();
+    m_syscmds = new std::unordered_map<std::string, cmd_t>();
+    m_vfs = VFS::get_vfs();
 
-    m_env = terminal::INTERNAL;
-
-    init_valid();
-    BUFFER << LOG_str(Log::INFO, "Terminal: defined, /help for cmd list");
+    cmd_map();
 }
 
 terminal::~terminal() {
-    printf("Exiting VFS..\n");
-    delete m_extern_cmds;
-    printf("Deleted terminal\n");
-    BUFFER.~Buffer();
+    delete sys_lock;
+    delete m_syscmds;
     m_vfs->~VFS();
+    BUFFER.~Buffer();
     delete LOG_INSTANCE;
 }
 
-void terminal::run() noexcept {
-    std::string line;
+terminal* terminal::get_instance() noexcept {
+    if(!m_terminal)
+        m_terminal = new terminal();
 
+    return m_terminal;
+}
+
+void terminal::run() noexcept {
+    BUFFER << LOG_str(Log::INFO, "Terminal: defined, /help for cmd list");
     BUFFER << "-------------------------------------------------\n";
+    std::string line;
 
     while(1) {
         const char* str = BUFFER.retain_buffer();
@@ -40,8 +44,9 @@ void terminal::run() noexcept {
         BUFFER.release_buffer();
 
         std::getline(std::cin, line);
+        printf("%s%s%s", "\x1b[A", "\r", "\33[2K");
 
-        if(strcmp(line.c_str(), "exit") == 0)
+        if(strcmp(line.c_str(), "/exit") == 0)
             return;
 
         if(!line.empty()) {
@@ -52,84 +57,43 @@ void terminal::run() noexcept {
 }
 
 void terminal::input(const char* line) noexcept {
-    uint8_t if_int = interpret_int(line);
-
-    if(if_int)
-        return;
-
-    std::vector<std::string> args = split(line, SEPARATOR);
+    std::vector<std::string> args = lib_::split(line, SEPARATOR);
     VFS::system_cmd command = validate_cmd(args);
-    terminal::cmd_environment cmd_env = cmdToEnv(command);
-
-    if(!m_vfs->is_mnted() && cmd_env == EXTERNAL) {
-        BUFFER << LOG_str(Log::WARNING, "Command is used within the wrong context");
-        return;
-    }
 
     args.erase(args.begin()); // remove initial to retrieve only args
-    interpret_ext(command, cmd_env, args);
+    interpret_cmd(command, args);
 }
 
-uint8_t terminal::interpret_int(std::string line) noexcept {
-    if(m_intern_cmds.find(line) == m_intern_cmds.end())
-        return 0;
 
-    switch(hash(line.c_str())) {
-        case hash("/clear"): clear_scr(); break;
-        case hash("/help"):  print_help(); break;
-    }
+VFS::system_cmd terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
+    if(m_syscmds->find(parts[0]) == m_syscmds->end())
+        return VFS::system_cmd::invalid;
 
-    return 1;
+    return (*this.*m_syscmds->find(parts[0])->second.valid)(parts) == VFS::system_cmd::invalid
+    ? VFS::system_cmd::invalid : m_syscmds->find(parts[0])->second.cmd_name;
 }
 
-void terminal::interpret_ext(VFS::system_cmd cmd, cmd_environment cmd_env, std::vector<std::string>& args) noexcept {
+void terminal::interpret_cmd(VFS::system_cmd cmd, std::vector<std::string>& args, char*& payload, uint64_t size) noexcept {
 
     if(cmd == VFS::system_cmd::invalid) {
         BUFFER << "command is invalid, use /help\n";
         return;
     }
 
-    if(cmd_env == HYBRID) {
-        switch(cmd) {
-            case VFS::system_cmd::vfs_: m_vfs->control_vfs(args);
-            determine_env(args[0].c_str());
-            break;
+    (*this.*m_syscmds->find(VFS::syscmd_str[(int)cmd])->second.funct)(cmd, args, payload, size);
+}
 
-            default:
-                break;
+void terminal::translate_remote_cmd(VFS::system_cmd& cmd, std::vector<std::string>& args) noexcept {
+    if(cmd == VFS::system_cmd::cp) {
+        if(strcmp(args[0].c_str(), "imp") == 0) {
+            args.erase(args.begin());
+            args.erase(args.begin());
+            cmd = VFS::system_cmd::touch;
         }
-    } else if(cmd_env == EXTERNAL) {
-            (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args, "");
     }
 }
 
-void terminal::determine_env(const char *token) noexcept {
-    switch(hash(token)) {
-
-        case hash("mnt"):
-            if(m_vfs->get_mnted_system() != nullptr)
-                set_env(EXTERNAL);
-            break;
-        case hash("umnt"): 
-            if(m_vfs->get_mnted_system() != nullptr)
-                set_env(INTERNAL); 
-            break;
-    }
-}
-
-VFS::system_cmd terminal::validate_cmd(std::vector<std::string> &parts) noexcept {
-    if(m_extern_cmds->find(parts[0]) == m_extern_cmds->end())
-        return VFS::system_cmd::invalid;
-
-    return (*this.*m_extern_cmds->find(parts[0])->second.valid)(parts) == VFS::system_cmd::invalid
-    ? VFS::system_cmd::invalid : m_extern_cmds->find(parts[0])->second.cmd_name;
-}
-
-void terminal::set_env(cmd_environment env) noexcept {
-    this->m_env = env;
-}
-
-void terminal::print_help() noexcept {
+void terminal::print_help(VFS::system_cmd cmd, std::vector<std::string> args, char*&, uint64_t size) noexcept {
     BUFFER << "\n--------- Help ---------\n";
     uint32_t j = 0;
     for(auto i = m_vfs->get_sys_cmds()->begin(); i != m_vfs->get_sys_cmds()->end(); i++) {
@@ -141,96 +105,62 @@ void terminal::print_help() noexcept {
     BUFFER << "---------  End  ---------\n";
 }
 
-
-void terminal::clear_scr() const noexcept {
+void terminal::clear_scr(VFS::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size) noexcept {
     printf(CLEAR_SCR);
 }
 
+void terminal::map_vfs_funct(VFS::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size) noexcept {
+    sys_lock->lock();
+    if(m_vfs->is_mnted() && strcmp(m_vfs->get_mnted_system()->fs_type, "rfs") == 0) {
+        sys_lock->unlock();
+        map_sys_funct(cmd, args, payload, size);
+    } else m_vfs->control_vfs(args);
+    sys_lock->unlock();
+}
+
+void terminal::map_sys_funct(VFS::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size) noexcept {
+    if(!m_vfs->is_mnted()) {
+        BUFFER << LOG_str(Log::WARNING, "Please mount a system before carrying out a sys call");
+        return;
+    }
+    sys_lock->lock();
+    (*m_vfs.*m_vfs->get_mnted_system()->access)(cmd, args, payload, size);
+    sys_lock->unlock();
+}
+
+
 VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
-    if(parts.size() > 6)
-        return VFS::system_cmd::invalid;
+    if(parts.size() > 6) return VFS::system_cmd::invalid;
+    if(parts.size() == 1) return VFS::system_cmd::vfs_;
 
-    if(parts.size() == 1)
-        return VFS::system_cmd::vfs_;
-
-    switch(hash(parts[1].c_str())) {
-        case hash("ls"):
-            if(parts.size() > 2)
-                return VFS::system_cmd::invalid;
-            break;
-
-        case hash("ifs"):
-            if(parts.size() != 4 && parts.size() != 5)
-                return VFS::system_cmd::invalid;
-            break;
-
-        case hash("rfs"):
-            if(parts.size() != 4 && parts.size() != 6)
-                return VFS::system_cmd::invalid;
-            break;
-
-        case hash("mnt"):
-            if(parts.size() != 3)
-                return VFS::system_cmd::invalid;
-            break;
-
-        case hash("umnt"):
-            if(parts.size() != 2)
-                return VFS::system_cmd::invalid;
-            break;
-
-        case hash("server"):
-            if(parts.size() != 2 && parts.size() != 3)
-                return VFS::system_cmd::invalid;
-            break;
-
+    switch(lib_::hash(parts[1].c_str())) {
+        case lib_::hash("ls"):     if(parts.size() > 2)                       return VFS::system_cmd::invalid; break;
+        case lib_::hash("ifs"):    if(parts.size() != 4 && parts.size() != 5) return VFS::system_cmd::invalid; break;
+        case lib_::hash("rfs"):    if(parts.size() != 4 && parts.size() != 6) return VFS::system_cmd::invalid; break;
+        case lib_::hash("mnt"):    if(parts.size() != 3)                      return VFS::system_cmd::invalid; break;
+        case lib_::hash("umnt"):   if(parts.size() != 2)                      return VFS::system_cmd::invalid; break;
+        case lib_::hash("server"): if(parts.size() != 2 && parts.size() != 3) return VFS::system_cmd::invalid; break;
         default: return VFS::system_cmd::invalid;
     }
     return VFS::system_cmd::vfs_;
 }
 
-VFS::system_cmd terminal::valid_ls(std::vector<std::string>& parts) noexcept {
-    if(parts.size() != 1)
-        return VFS::system_cmd::invalid;
-
-    return VFS::system_cmd::ls;
-}
-
-VFS::system_cmd terminal::valid_mkdir(std::vector<std::string>& parts) noexcept {
-    if(parts.size() != 2)
-        return VFS::system_cmd::invalid;
-
-    return VFS::system_cmd::mkdir;
-}
-
-VFS::system_cmd terminal::valid_cd(std::vector<std::string>& parts) noexcept {
-    if(parts.size() != 2)
-        return VFS::system_cmd::invalid;
-
-    return VFS::system_cmd::cd;
-}
-
-VFS::system_cmd terminal::valid_rm(std::vector<std::string>& parts) noexcept {
-    if(parts.size() < 2)
-        return VFS::system_cmd::invalid;
-
-    return VFS::system_cmd::rm;
-}
-
-VFS::system_cmd terminal::valid_touch(std::vector<std::string>& parts) noexcept {
-    if(parts.size() == 2)
-        return VFS::system_cmd::touch;
-    else return VFS::system_cmd::invalid;
-}
-
-VFS::system_cmd terminal::valid_mv(std::vector<std::string>& parts) noexcept {
-    if(parts.size() != 3)
-        return VFS::system_cmd::invalid;
-    else return VFS::system_cmd::mv;
+void terminal::cmd_map() noexcept {
+    (*m_syscmds)["/vfs"]   = cmd_t{VFS::system_cmd::vfs_,  &terminal::valid_vfs,   &terminal::map_vfs_funct};
+    (*m_syscmds)["ls"]     = cmd_t{VFS::system_cmd::ls,    &terminal::valid_ls,    &terminal::map_sys_funct};
+    (*m_syscmds)["mkdir"]  = cmd_t{VFS::system_cmd::mkdir, &terminal::valid_mkdir, &terminal::map_sys_funct};
+    (*m_syscmds)["cd"]     = cmd_t{VFS::system_cmd::cd,    &terminal::valid_cd,    &terminal::map_sys_funct};
+    (*m_syscmds)["rm"]     = cmd_t{VFS::system_cmd::rm,    &terminal::valid_rm,    &terminal::map_sys_funct};
+    (*m_syscmds)["touch"]  = cmd_t{VFS::system_cmd::touch, &terminal::valid_touch, &terminal::map_sys_funct};
+    (*m_syscmds)["mv"]     = cmd_t{VFS::system_cmd::mv,    &terminal::valid_mv,    &terminal::map_sys_funct};
+    (*m_syscmds)["cp"]     = cmd_t{VFS::system_cmd::cp,    &terminal::valid_cp,    &terminal::map_sys_funct};
+    (*m_syscmds)["cat"]    = cmd_t{VFS::system_cmd::cat,   &terminal::valid_cat,   &terminal::map_sys_funct};
+    (*m_syscmds)["/help"]  = cmd_t{VFS::system_cmd::help,  &terminal::valid_help,  &terminal::print_help};
+    (*m_syscmds)["/clear"] = cmd_t{VFS::system_cmd::clear, &terminal::valid_clear, &terminal::clear_scr};
 }
 
 VFS::system_cmd terminal::valid_cp(std::vector<std::string>& parts) noexcept {
-    if(strcmp(parts[1].c_str(), "imp") == 0 || strcmp(parts[1].c_str(), "exp") == 0) {
+ if(strcmp(parts[1].c_str(), "imp") == 0 || strcmp(parts[1].c_str(), "exp") == 0) {
         if(parts.size() == 4)
             return VFS::system_cmd::cp;
     } else if(parts.size() == 3)
@@ -239,38 +169,13 @@ VFS::system_cmd terminal::valid_cp(std::vector<std::string>& parts) noexcept {
     return VFS::system_cmd::invalid;
 }
 
-VFS::system_cmd terminal::valid_cat(std::vector<std::string>& parts) noexcept {
-    if(parts.size() == 2)
-        return VFS::system_cmd::cat;
-    else return VFS::system_cmd::invalid;
-}
 
-terminal::cmd_environment terminal::cmdToEnv(VFS::system_cmd cmd) noexcept {
-    switch(cmd) {
-        case VFS::system_cmd::vfs_:  return terminal::HYBRID;
-        case VFS::system_cmd::mkdir: return terminal::EXTERNAL;
-        case VFS::system_cmd::ls:    return terminal::EXTERNAL;
-        case VFS::system_cmd::touch: return terminal::EXTERNAL;
-        case VFS::system_cmd::cd:    return terminal::EXTERNAL;
-        case VFS::system_cmd::rm:    return terminal::EXTERNAL;
-        case VFS::system_cmd::cp:    return terminal::EXTERNAL;
-        case VFS::system_cmd::mv:    return terminal::EXTERNAL;
-        case VFS::system_cmd::invalid:  return terminal::EXTERNAL;
-
-        default: return m_env;
-    }
-}
-
-void terminal::init_valid() noexcept {
-    (*m_extern_cmds)["/vfs"]   = valid_cmd_t{VFS::system_cmd::vfs_, &terminal::valid_vfs};
-    (*m_extern_cmds)["ls"]     = valid_cmd_t{VFS::system_cmd::ls, &terminal::valid_ls};
-    (*m_extern_cmds)["mkdir"]  = valid_cmd_t{VFS::system_cmd::mkdir, &terminal::valid_mkdir};
-    (*m_extern_cmds)["cd"]     = valid_cmd_t{VFS::system_cmd::cd, &terminal::valid_cd};
-    (*m_extern_cmds)["rm"]     = valid_cmd_t{VFS::system_cmd::rm, &terminal::valid_rm};
-    (*m_extern_cmds)["touch"]  = valid_cmd_t{VFS::system_cmd::touch, &terminal::valid_touch};
-    (*m_extern_cmds)["mv"]     = valid_cmd_t{VFS::system_cmd::mv, &terminal::valid_mv};
-    (*m_extern_cmds)["cp"]     = valid_cmd_t{VFS::system_cmd::cp, &terminal::valid_cp};
-    (*m_extern_cmds)["cat"]    = valid_cmd_t{VFS::system_cmd::cat, &terminal::valid_cat};
-}
-
-
+VFS::system_cmd terminal::valid_ls(std::vector<std::string>& parts)    noexcept { return (parts.size() != 1)   ? VFS::system_cmd::invalid : VFS::system_cmd::ls;      }
+VFS::system_cmd terminal::valid_mkdir(std::vector<std::string>& parts) noexcept { return (parts.size() != 2)   ? VFS::system_cmd::invalid : VFS::system_cmd::mkdir;   }
+VFS::system_cmd terminal::valid_cd(std::vector<std::string>& parts)    noexcept { return (parts.size() != 2)   ? VFS::system_cmd::invalid : VFS::system_cmd::cd;      }
+VFS::system_cmd terminal::valid_rm(std::vector<std::string>& parts)    noexcept { return (parts.size() < 2)    ? VFS::system_cmd::invalid : VFS::system_cmd::rm;      }
+VFS::system_cmd terminal::valid_touch(std::vector<std::string>& parts) noexcept { return (parts.size() == 2)   ? VFS::system_cmd::touch   : VFS::system_cmd::invalid; }
+VFS::system_cmd terminal::valid_mv(std::vector<std::string>& parts)    noexcept { return (parts.size() != 3)   ? VFS::system_cmd::invalid : VFS::system_cmd::mv;      }
+VFS::system_cmd terminal::valid_cat(std::vector<std::string>& parts)   noexcept { return (parts.size() == 2)   ? VFS::system_cmd::cat     : VFS::system_cmd::invalid; }
+VFS::system_cmd terminal::valid_help(std::vector<std::string>& parts)  noexcept { return (parts.size() == 1)   ? VFS::system_cmd::help    : VFS::system_cmd::invalid; }
+VFS::system_cmd terminal::valid_clear(std::vector<std::string>& parts) noexcept { return (parts.size() == 1)   ? VFS::system_cmd::clear   : VFS::system_cmd::invalid; }

@@ -4,8 +4,8 @@
 #include <vector>
 #include <string>
 
-#include "config.h"
 #include "FS.h"
+#include "Buffer.h"
 
 class IFS : public FS {
 public:
@@ -21,7 +21,7 @@ public:
     __attribute__((unused)) virtual void cp(const char* src, const char* dst) noexcept = 0;
     __attribute__((unused)) virtual void cp_imp(const char* src, const char* dst) noexcept = 0;
     __attribute__((unused)) virtual void cp_exp(const char* src, const char* dst) noexcept = 0;
-    __attribute__((unused)) virtual void touch(std::vector<std::string>& tokens, const char* buffer) noexcept = 0;
+    __attribute__((unused)) virtual void touch(std::vector<std::string>& tokens, char* data, uint64_t size) noexcept = 0;
     __attribute__((unused)) virtual void cat(const char* path) noexcept = 0;
     __attribute__((unused)) virtual void ls() noexcept = 0;
 };

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <vector>
 
-#include "config.h"
+#include "Buffer.h"
 #include "FS.h"
 
 class RFS : public FS {
@@ -63,10 +63,11 @@ protected:
 
     void print_packet(const packet_t&) const noexcept;
     void print_payload(const payload_t&) const noexcept;
+    char* generate_hash() noexcept;
 
 public:
-    void retain_payloads(char*& buffer, std::vector<payload_t>&) noexcept;
-    pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, char*& payload) noexcept;
+    uint64_t retain_payloads(char*& buffer, std::vector<payload_t>&) noexcept;
+    pcontainer_t* generate_container(uint8_t cmd, std::vector<std::string>& args, std::byte*& payload, uint64_t size) noexcept;
 
 public:
     constexpr static size_t BUFFER_SIZE = sizeof(packet_t) + sizeof(payload_t);

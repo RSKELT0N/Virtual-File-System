@@ -6,6 +6,9 @@
 #include <string>
 
 #include "config.h"
+#include "lib.h"
+
+#define BUFFER     (*Buffer::get_buffer())
 
 class Buffer {
    

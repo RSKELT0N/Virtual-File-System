@@ -6,6 +6,8 @@
 
 #include "VFS.h"
 #include "RFS.h"
+#include "lib.h"
+#include "Buffer.h"
 
 #ifndef _WIN32
     #include <arpa/inet.h>
@@ -16,9 +18,6 @@
     #include <ws2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
 #endif
-
-#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-#define PBWIDTH 60
 
 class Client : public RFS {
     
@@ -45,7 +44,7 @@ public:
     void receive_from_server() noexcept;
     uint8_t receive(char* buffer, size_t bytes) noexcept;
     void send(const char*, size_t) noexcept;
-    void get_payload(const char*, std::vector<std::string>&, char*&) noexcept;
+    uint64_t get_payload(const char*, std::vector<std::string>&, std::byte*&) noexcept;
     void handle_send(const char*, uint8_t, std::vector<std::string>&) noexcept;
 
 private:

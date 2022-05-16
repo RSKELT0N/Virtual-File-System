@@ -1,50 +1,11 @@
 #include "../include/VFS.h"
 
-int itoa_(int value, char *sp, int radix, int amt) {
-    char tmp[amt];// be careful with the length of the buffer
-    char *tp = tmp;
-    uint64_t i = 0;
-    unsigned v = 0;
-
-    int sign = (radix == 10 && value < 0);    
-    if (sign)
-        v = -value;
-    else
-        v = (unsigned)value;
-
-    while (v || tp == tmp) {
-        i = v % radix;
-        v /= radix;
-        if (i < 10)
-          *tp++ = i+'0';
-        else
-          *tp++ = i + 'a' - 10;
-    }
-
-    uint64_t len = tp - tmp;
-
-    if (sign) {
-        *sp++ = '-';
-        len++;
-    }
-
-    while (tp > tmp)
-        *sp++ = *--tp;
-
-    return len;
-}
-
-constexpr unsigned int hash(const char *s, int off = 0) {
-    return !s[off] ? 5381 : (hash(s, off+1)*33) ^ s[off];
-}
-
 VFS::system_t::~system_t() {
     if(fs != nullptr) {
-        switch(hash(fs_type)) {
-                case hash("fat32"): delete static_cast<FAT32*>(fs); break;
-                case hash("rfs"):   delete static_cast<Client*>(fs); break;
+        switch(lib_::hash(fs_type)) {
+                case lib_::hash("fat32"): delete static_cast<FAT32*>(fs); break;
+                case lib_::hash("rfs"):   delete static_cast<Client*>(fs); break;
         }
-        printf("Deleted IFS\n");
     }
 }
 
@@ -55,6 +16,7 @@ VFS* VFS::vfs;
 VFS::VFS() {
     mnted_system = static_cast<system_t*>(malloc(sizeof(system_t)));
     mnted_system->name = "";
+    mnted_system->fs = nullptr;
     disks        = new std::unordered_map<std::string, system_t>();
     sys_cmds     = new std::vector<VFS::cmd_t>();
 
@@ -63,13 +25,14 @@ VFS::VFS() {
 }
 
 VFS::~VFS() {
-    if(server != nullptr)
+    if(server != nullptr) {
         delete (Server*)server;
+        server = nullptr;
+    }
 
     free(disks);
     delete mnted_system;
     free(vfs);
-    printf("Deleted VFS\n");
 }
 
 const bool VFS::is_mnted() const noexcept {
@@ -111,9 +74,8 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
         return;
     }
 
-    printf("%s  %s  %s", "\n--------------------", parts[1].c_str(), "--------------------\n");
+    BUFFER << "--------------------  " << parts[1].c_str() << "  --------------------\n";
     BUFFER << LOG_str(Log::INFO, "Mounting '" + parts[1] + "' as primary FS on the vfs");
-
     disks->find(parts[1])->second.fs = typetofs(parts[1].c_str(), disks->find(parts[1])->second.fs_type);
 
     this->mnted_system->name    = parts[1].c_str();
@@ -166,7 +128,6 @@ void VFS::rm_remote(std::vector<std::string>& parts) {
 }
 
 void VFS::lst_disks(std::vector<std::string>& parts) {
-    BUFFER << "\n";
     BUFFER << "-----------------  VFS  ---------------\n";
     if(disks->empty()) {
         BUFFER << " -> there is no systems added\n";
@@ -196,13 +157,6 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
 }
 
 void VFS::init_server(std::vector<std::string>& args) {
-    if(args.size() > 1) {
-        if(server != nullptr && strcmp(args[1].c_str(), "logs") == 0)
-            BUFFER << (((Server*)((RFS*)server))->print_logs());
-        else BUFFER << "Server is not initialised\n";
-        return;
-    }
-
     if(server == nullptr) {
         server = new Server();
         return;
@@ -231,6 +185,8 @@ void VFS::init_sys_cmds() noexcept {
     sys_cmds->push_back({system_cmd::mv,     {}, "moves an entry towards a different directory"});
     sys_cmds->push_back({system_cmd::cp,     {}, "copies an entry within the specified directory"});
     sys_cmds->push_back({system_cmd::cat,    {}, "print bytes found at entry"});
+    sys_cmds->push_back({system_cmd::help,   {}, "prints help page"});
+    sys_cmds->push_back({system_cmd::clear,  {}, "clears bytes from screen"});
 }
 
 void VFS::control_vfs(const std::vector<std::string>& parts) noexcept { // checks vfs flags, if none print help. if not, carry out function.
@@ -249,15 +205,15 @@ void VFS::control_vfs(const std::vector<std::string>& parts) noexcept { // check
 }
 
 
-void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer) noexcept {
+void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer, uint64_t size) noexcept {
     switch(cmd) {
-        case VFS::system_cmd::mkdir: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mkdir(args[0].c_str())); break;
-        case VFS::system_cmd::cd:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cd(args[0].c_str()));    break;
-        case VFS::system_cmd::ls:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->ls());                   break;
-        case VFS::system_cmd::rm:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->rm(args));               break;
-        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args, buffer));    break;
-        case VFS::system_cmd::mv:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mv(args));               break;
-        case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));   break;
+        case VFS::system_cmd::mkdir: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mkdir(args[0].c_str()));           break;
+        case VFS::system_cmd::cd:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cd(args[0].c_str()));              break;
+        case VFS::system_cmd::ls:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->ls());                             break;
+        case VFS::system_cmd::rm:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->rm(args));                         break;
+        case VFS::system_cmd::touch: (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->touch(args, (char*)buffer, size)); break;
+        case VFS::system_cmd::mv:    (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->mv(args));                         break;
+        case VFS::system_cmd::cat:   (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cat(args[0].c_str()));             break;
 
         case VFS::system_cmd::cp:    if(args[0] == "imp") 
                                         (static_cast<IFS*>(VFS::get_vfs()->get_mnted_system()->fs)->cp_imp(args[1].c_str(), args[2].c_str()));
@@ -268,21 +224,21 @@ void VFS::ifs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, cons
     }
 }
 
-void VFS::rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer_) noexcept {
+void VFS::rfs_cmd_func(VFS::system_cmd cmd, std::vector<std::string>& args, const char* buffer_, uint64_t size) noexcept {
     ((Client*)(RFS*)VFS::get_vfs()->get_mnted_system()->fs)->handle_send(syscmd_str[(uint8_t)cmd], (uint8_t)cmd, args);
 }
 
 void VFS::control_ifs(std::vector<std::string>& parts) noexcept {
-    switch(hash(parts[1].c_str())) {
-        case hash("add"): add_disk(parts); return;
-        case hash("rm"):  rm_disk(parts);  return;
+    switch(lib_::hash(parts[1].c_str())) {
+        case lib_::hash("add"): add_disk(parts); return;
+        case lib_::hash("rm"):  rm_disk(parts);  return;
     }
 }
 
 void VFS::control_rfs(std::vector<std::string>& parts) noexcept {
-    switch(hash(parts[1].c_str())) {
-        case hash("add"): add_remote(parts); return;
-        case hash("rm"):  rm_remote(parts);  return;
+    switch(lib_::hash(parts[1].c_str())) {
+        case lib_::hash("add"): add_remote(parts); return;
+        case lib_::hash("rm"):  rm_remote(parts);  return;
     }
 }
 
@@ -304,8 +260,6 @@ void VFS::load_disks() noexcept {
    while((entry = readdir(dir)) != NULL) {
        if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
            continue;
-
-
        func[2] = entry->d_name;
        VFS::get_vfs()->control_vfs(func);
    }
@@ -314,12 +268,9 @@ void VFS::load_disks() noexcept {
 }
 
 FS* VFS::typetofs(const char* name, const char *fs_type) noexcept {
-    switch(hash(fs_type)) {
-        case hash("fat32"): return new FAT32(name);
-        case hash("rfs"): 
-              auto rm = disks->find(name); 
-              return new Client(rm->second.conn.addr, rm->second.conn.port); 
+    switch(lib_::hash(fs_type)) {
+        case lib_::hash("fat32"): return new FAT32(name);
+        case lib_::hash("rfs"): auto rm = disks->find(name); return new Client(rm->second.conn.addr, rm->second.conn.port); 
     }
-
     return new FAT32(name);
 }

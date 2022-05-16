@@ -48,8 +48,11 @@ private:
         int sock_fd = {};
         sockaddr_in hint = {};
         const char* ip = {};
-        std::thread* thrd = {};
-        ~client_t() {if(thrd) delete thrd; close(sock_fd);}
+        std::thread thrd = {};
+        ~client_t() {
+                state = CFG_SOCK_CLOSE;
+                close(sock_fd);
+            }
     };
 
 public:
@@ -74,6 +77,7 @@ private:
     void bind_sock() noexcept;
     void mark_listener() noexcept;
     void add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept;
+    void remove_client(client_t* client) noexcept;
 
 private:
     void handle(client_t*) noexcept;
