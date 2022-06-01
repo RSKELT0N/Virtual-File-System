@@ -3,7 +3,7 @@
 
 #include <mutex>
 #include <stdio.h>
-#include <string>
+#include <cstring>
 
 #include "config.h"
 #include "lib.h"
@@ -15,11 +15,10 @@ class Buffer {
 private:
     Buffer();
     Buffer(Buffer&&) = delete;
-    Buffer(const Buffer&);
+    Buffer(const Buffer&) = delete;
     
 public:
     ~Buffer();
-
 
 public:
     static Buffer* get_buffer() noexcept;
@@ -28,13 +27,16 @@ public:
 
     void hold_buffer() noexcept;
     void release_buffer() noexcept;
-    const char* retain_buffer() noexcept;
+    void retain_buffer(char*& store) noexcept;
+    void retain_buffer(std::byte*&) noexcept;
+    void print_stream() noexcept;
+    void append(char*, size_t) noexcept;
    
 private:
     std::mutex* mLock;
     static Buffer* mBuf_p;
 public:
-    std::string *mStream;
+    std::vector<char>* mStream;
 };
 
 

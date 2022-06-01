@@ -48,7 +48,12 @@ private:
         int sock_fd = {};
         sockaddr_in hint = {};
         const char* ip = {};
+        int8_t recieved_ping = {};
+
+
         std::thread thrd = {};
+        std::thread ping = {};
+
         ~client_t() {
                 state = CFG_SOCK_CLOSE;
                 close(sock_fd);
@@ -72,21 +77,23 @@ public:
     void send_to_client(client_t&) noexcept;
     void recv_(char* buffer, client_t&, size_t bytes) noexcept;
 
+    const char* print_logs() const noexcept;
+    void interpret_input(pcontainer_t*, client_t&) noexcept;
+    void set_state(const uint8_t& state) noexcept;
+
 private:
     void set_sockopt() noexcept;
     void bind_sock() noexcept;
     void mark_listener() noexcept;
     void add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept;
     void remove_client(client_t* client) noexcept;
-
-private:
     void handle(client_t*) noexcept;
+    void ping(client_t*) noexcept;
+    void ping_client(client_t*) noexcept;
     std::string find_ip(const sockaddr_in& sock) const noexcept;
-
-public:
-    const char* print_logs() const noexcept;
-    void interpret_input(pcontainer_t*, client_t&) noexcept;
-    void set_state(const uint8_t& state) noexcept;
+    void set_recieved_ping(client_t&, int8_t) noexcept;
+    void set_state(int8_t) noexcept;
+    void set_state(client_t&, int8_t) noexcept;
 
 private:
     std::vector<std::pair<uint32_t, client_t*>>* clients;

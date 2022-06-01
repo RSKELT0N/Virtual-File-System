@@ -1,6 +1,5 @@
 #include "../include/FAT32.h"
 
-IFS::IFS() = default;
 const uint32_t FAT32::CLUSTER_SIZE;
 const uint64_t FAT32::CLUSTER_AMT;
 
@@ -442,8 +441,7 @@ int32_t FAT32::store_file(std::byte* data, uint64_t data_size) noexcept {
 }
 
 void FAT32::insert_int_file(dir_t& dir, std::byte* buffer, const char* name, size_t size) noexcept {
-    std::byte* data = new std::byte[size];
-    memcpy(data, buffer, size);
+    std::byte* data = buffer;
 
     uint32_t start_clu = store_file(data, size);
 
@@ -454,7 +452,6 @@ void FAT32::insert_int_file(dir_t& dir, std::byte* buffer, const char* name, siz
 
     add_new_entry(dir, name, start_clu, size, 0);
     save_dir(dir);
-    delete data;
 }
 
 void FAT32::insert_ext_file(dir_t & curr_dir, const char* path, const char* name) noexcept {
@@ -520,8 +517,14 @@ FAT32::dir_entr_ret_t* FAT32::parsePath(std::vector<std::string>&path, uint8_t s
 
         if (curr_dir != m_curr_dir)
             delete curr_dir;
-        curr_dir = read_dir(tmp_entr->start_cluster_index);
 
+        dir_t* tmp = read_dir(tmp_entr->start_cluster_index);
+
+        if(dir_equal(*curr_dir, *tmp) == 1) {
+            delete tmp;
+        } else {
+            curr_dir = tmp;
+        }
     }
 
     tmp_entr = find_entry(*curr_dir, path[path.size() - 1].c_str(), shd_exst);
@@ -780,25 +783,35 @@ void FAT32::rm(std::vector<std::string>&tokens) noexcept {
 }
 
 void FAT32::touch(std::vector<std::string>& parts, char* payload, uint64_t size) noexcept {
-    for(int i = 0; i < parts.size(); i++) {
-        std::vector<std::string> tokens = lib_::split(parts[i].c_str(), '/');
-        dir_entr_ret_t* entr = parsePath(tokens, 0x0);
-        const char* init_file_name = tokens[tokens.size() - 1].c_str();
+    std::vector<std::string> tokens = lib_::split(parts[0].c_str(), '/');
+    dir_entr_ret_t* entr = parsePath(tokens, 0x0);
+    const char* init_file_name = tokens[tokens.size() - 1].c_str();
 
-        if(!entr) {
-            BUFFER << (LOG_str(Log::WARNING, "Path specified is invalid"));
-            delete entr;
-            return;
-        }
-        std::byte* buffer = new std::byte[size];
-        memcpy(buffer, payload, size);
-        insert_int_file(*entr->m_dir, buffer, init_file_name, size);
-        delete buffer;
+    if(!entr) {
+        BUFFER << (LOG_str(Log::WARNING, "Path specified is invalid"));
         delete entr;
+        return;
     }
+
+    if(size == 0 && parts.size() > 1) {
+        std::string tmp = {};
+        for(int i = 1; i < parts.size(); i++) {
+            tmp += parts[i];
+            tmp += " ";
+        }
+        tmp[tmp.size() - 1] = '\0';
+        payload = const_cast<char*>(tmp.c_str());
+        size = tmp.size();
+    }
+
+    std::byte* buffer = new std::byte[size];
+    memcpy(buffer, payload, size);
+    insert_int_file(*entr->m_dir, buffer, init_file_name, size);
+    delete buffer;
+    delete entr;
 }
 
-void FAT32::cat(const char* path) noexcept {
+void FAT32::cat(const char* path, uint8_t export_) noexcept {
     std::vector<std::string> tokens = lib_::split(path, '/');
     dir_entr_ret_t* entr = parsePath(tokens, 0x1);
 
@@ -813,7 +826,15 @@ void FAT32::cat(const char* path) noexcept {
 
     delete buffer;
     std::string file_name = tokens[tokens.size() - 1];
-    BUFFER << "\nFile: " << file_name.c_str() << "\nSize: " << size << "b\n------------\n" << data << "\n";
+
+    if(export_ == 0) {
+        BUFFER << "\nFile: " << file_name.c_str() << "\nSize: " << size << "b\n------------\n";
+        BUFFER.append(data, size);
+        BUFFER << "\n";
+    } else {
+        BUFFER.append(data, size);
+    }
+
     free(data);
 }
 
@@ -899,4 +920,16 @@ void FAT32::print_dir(dir_t & dir) noexcept {
     sprintf(buffer + strlen(buffer), "\n");
 
     BUFFER << (buffer);
+}
+
+int8_t FAT32::dir_equal(FAT32::dir_t& d1, FAT32::dir_t& d2) noexcept {
+    int8_t res = 1;
+
+    if(strcmp(d1.dir_header.dir_name, d2.dir_header.dir_name) != 0)
+        res = -1;
+
+    if(d1.dir_header.start_cluster_index != d1.dir_header.start_cluster_index || d1.dir_header.parent_cluster_index != d1.dir_header.parent_cluster_index)
+        res = -1;
+
+    return res;
 }

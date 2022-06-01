@@ -18,14 +18,14 @@
 #define _DEBUG_ 0
 
 // IFS
-#define CFG_USER_SPACE_SIZE       (uint64_t)(MB(48))
+#define CFG_USER_SPACE_SIZE       (uint64_t)(MB(480))
 #define CFG_CLUSTER_SIZE          (uint64_t)(KB(12))
 #define CFG_MAX_USER_SPACE_SIZE   (uint64_t)(GB(4))
 #define CFG_MIN_USER_SPACE_SIZE   (uint64_t)(MB(24))
 
 // RFS
-#define CFG_SOCK_OPEN             (uint8_t)1
-#define CFG_SOCK_CLOSE            (uint8_t)0
+#define CFG_SOCK_OPEN             (int8_t)1
+#define CFG_SOCK_CLOSE            (int8_t)0
 #define CFG_DEFAULT_PORT          (uint32_t)52222
 #define CFG_SOCK_LISTEN_AMT       (uint32_t)5
 

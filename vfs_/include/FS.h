@@ -11,6 +11,9 @@
 #include "Log.h"
 
 class FS {
+public:
+    FS() {};
+    virtual ~FS() {};
 
 public:
     std::string convert_size(const uint64_t&) const noexcept;

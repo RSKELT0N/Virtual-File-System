@@ -38,9 +38,9 @@ void terminal::run() noexcept {
     std::string line;
 
     while(1) {
-        const char* str = BUFFER.retain_buffer();
-
-        printf("%s%s", str, ">> ");
+        
+        BUFFER.print_stream();
+        printf("%s", ">> ");
         BUFFER.release_buffer();
 
         std::getline(std::cin, line);
@@ -50,8 +50,10 @@ void terminal::run() noexcept {
             return;
 
         if(!line.empty()) {
-            BUFFER.hold_buffer();
-            input(line.c_str());
+            if(line[0] != ' ') {
+                BUFFER.hold_buffer();
+                input(line.c_str());
+            }
         }
     }
 }
@@ -131,7 +133,7 @@ void terminal::map_sys_funct(VFS::system_cmd cmd, std::vector<std::string> args,
 
 VFS::system_cmd terminal::valid_vfs(std::vector<std::string>& parts) noexcept {
     if(parts.size() > 6) return VFS::system_cmd::invalid;
-    if(parts.size() == 1) return VFS::system_cmd::vfs_;
+    if(parts.size() == 1) return VFS::system_cmd::invalid;
 
     switch(lib_::hash(parts[1].c_str())) {
         case lib_::hash("ls"):     if(parts.size() > 2)                       return VFS::system_cmd::invalid; break;
@@ -160,7 +162,10 @@ void terminal::cmd_map() noexcept {
 }
 
 VFS::system_cmd terminal::valid_cp(std::vector<std::string>& parts) noexcept {
- if(strcmp(parts[1].c_str(), "imp") == 0 || strcmp(parts[1].c_str(), "exp") == 0) {
+    if(parts.size() == 1)
+        return VFS::system_cmd::invalid;
+
+    if(strcmp(parts[1].c_str(), "imp") == 0 || strcmp(parts[1].c_str(), "exp") == 0) {
         if(parts.size() == 4)
             return VFS::system_cmd::cp;
     } else if(parts.size() == 3)
@@ -174,7 +179,7 @@ VFS::system_cmd terminal::valid_ls(std::vector<std::string>& parts)    noexcept 
 VFS::system_cmd terminal::valid_mkdir(std::vector<std::string>& parts) noexcept { return (parts.size() != 2)   ? VFS::system_cmd::invalid : VFS::system_cmd::mkdir;   }
 VFS::system_cmd terminal::valid_cd(std::vector<std::string>& parts)    noexcept { return (parts.size() != 2)   ? VFS::system_cmd::invalid : VFS::system_cmd::cd;      }
 VFS::system_cmd terminal::valid_rm(std::vector<std::string>& parts)    noexcept { return (parts.size() < 2)    ? VFS::system_cmd::invalid : VFS::system_cmd::rm;      }
-VFS::system_cmd terminal::valid_touch(std::vector<std::string>& parts) noexcept { return (parts.size() == 2)   ? VFS::system_cmd::touch   : VFS::system_cmd::invalid; }
+VFS::system_cmd terminal::valid_touch(std::vector<std::string>& parts) noexcept { return (parts.size() >  1)   ? VFS::system_cmd::touch   : VFS::system_cmd::invalid; }
 VFS::system_cmd terminal::valid_mv(std::vector<std::string>& parts)    noexcept { return (parts.size() != 3)   ? VFS::system_cmd::invalid : VFS::system_cmd::mv;      }
 VFS::system_cmd terminal::valid_cat(std::vector<std::string>& parts)   noexcept { return (parts.size() == 2)   ? VFS::system_cmd::cat     : VFS::system_cmd::invalid; }
 VFS::system_cmd terminal::valid_help(std::vector<std::string>& parts)  noexcept { return (parts.size() == 1)   ? VFS::system_cmd::help    : VFS::system_cmd::invalid; }

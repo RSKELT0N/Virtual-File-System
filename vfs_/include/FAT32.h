@@ -90,7 +90,7 @@ public:
     void cp_imp(const char* src, const char* dst) noexcept override;
     void cp_exp(const char* src, const char* dst) noexcept override;
     void touch(std::vector<std::string>& tokens, char* payload, uint64_t size) noexcept override;
-    void cat(const char* path) noexcept override;
+    void cat(const char* path, uint8_t export_ = 0) noexcept override;
     void ls() noexcept override;
 
 private:
@@ -98,6 +98,7 @@ private:
     void init() noexcept;
     void load() noexcept;
     int8_t check_config() noexcept;
+    int8_t dir_equal(dir_t&, dir_t&) noexcept;
 
     void create_disk() noexcept;
     void add_new_entry(dir_t& dir, const char* name, const uint32_t& start_clu, const uint64_t& size, const uint8_t& is_dir) noexcept;

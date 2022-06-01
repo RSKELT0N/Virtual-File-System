@@ -1,27 +1,24 @@
 #include "../include/VFS.h"
 
-VFS::system_t::~system_t() {
-    if(fs != nullptr) {
-        switch(lib_::hash(fs_type)) {
-                case lib_::hash("fat32"): delete static_cast<FAT32*>(fs); break;
-                case lib_::hash("rfs"):   delete static_cast<Client*>(fs); break;
-        }
-    }
-}
-
-/////////////////////////   VFS   ////////////////////////////
-
 VFS* VFS::vfs;
 
 VFS::VFS() {
+    disks        = new std::unordered_map<std::string, system_t>();
+    sys_cmds     = new std::vector<VFS::cmd_t>();
     mnted_system = static_cast<system_t*>(malloc(sizeof(system_t)));
     mnted_system->name = "";
     mnted_system->fs = nullptr;
-    disks        = new std::unordered_map<std::string, system_t>();
-    sys_cmds     = new std::vector<VFS::cmd_t>();
 
     init_sys_cmds();
     BUFFER << LOG_str(Log::INFO, "VFS: defined");
+}
+
+
+VFS*& VFS::get_vfs() noexcept {
+    if(!vfs)
+        vfs = new VFS();
+
+    return vfs;
 }
 
 VFS::~VFS() {
@@ -33,25 +30,6 @@ VFS::~VFS() {
     free(disks);
     delete mnted_system;
     free(vfs);
-}
-
-const bool VFS::is_mnted() const noexcept {
-    return this->mnted_system->fs == nullptr ? false : true;
-}
-
-VFS::system_t*& VFS::get_mnted_system() noexcept {
-    return mnted_system;
-}
-
-VFS*& VFS::get_vfs() noexcept {
-    if(!vfs)
-        vfs = new VFS();
-
-    return vfs;
-}
-
-std::vector<VFS::cmd_t>* VFS::get_sys_cmds() noexcept {
-    return sys_cmds;
 }
 
 void VFS::umnt_disk(std::vector<std::string> &parts) {
@@ -74,7 +52,7 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
         return;
     }
 
-    BUFFER << "--------------------  " << parts[1].c_str() << "  --------------------\n";
+    BUFFER << "\r\n--------------------  " << parts[1].c_str() << "  --------------------\n";
     BUFFER << LOG_str(Log::INFO, "Mounting '" + parts[1] + "' as primary FS on the vfs");
     disks->find(parts[1])->second.fs = typetofs(parts[1].c_str(), disks->find(parts[1])->second.fs_type);
 
@@ -82,7 +60,7 @@ void VFS::mnt_disk(std::vector<std::string>& parts) {
     this->mnted_system->fs_type = disks->find(parts[1])->second.fs_type;
     this->mnted_system->fs      = *&(disks->find(parts[1])->second.fs);
 
-    if(strcmp(this->mnted_system->fs_type, "rfs") == 0)
+    if(dynamic_cast<RFS*>(this->mnted_system->fs))
         this->mnted_system->access = &VFS::rfs_cmd_func;
     else this->mnted_system->access  = &VFS::ifs_cmd_func;
 }
@@ -102,10 +80,14 @@ void VFS::add_disk(std::vector<std::string>& parts) {
 }
 
 void VFS::rm_disk(std::vector<std::string>& parts) {
-    if(mnted_system->fs)
-        if(disks->find(parts[2])->second.fs == mnted_system->fs)
+    FS* tmp = (disks->find(parts[2])->second.fs);
+
+    if(tmp) {
+        if(tmp == mnted_system->fs){
             umnt_disk(parts); // erases mounted system information, if disk deleted is mounted.
-            
+        }
+    }
+          
     disks->erase(parts[2]); // deletes file system, on heap.
 }
 
@@ -128,7 +110,8 @@ void VFS::rm_remote(std::vector<std::string>& parts) {
 }
 
 void VFS::lst_disks(std::vector<std::string>& parts) {
-    BUFFER << "-----------------  VFS  ---------------\n";
+    BUFFER << "\r-----------------  VFS  ---------------\n";
+
     if(disks->empty()) {
         BUFFER << " -> there is no systems added\n";
         goto no_disks;
@@ -137,11 +120,8 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
     for(auto i = disks->begin(); i != disks->end(); i++) {
         if(strcmp(i->second.fs_type, "rfs") == 0) {
             BUFFER << " -> (name)" << i->first.c_str() << " : (address)" << i->second.conn.addr << ", (port)" << i->second.conn.port;
-            goto mount;
-        }
-        BUFFER << " -> (name)" << i->first.c_str() << " : (filesystem)" << i->second.fs_type;
+        } else BUFFER << " -> (name)" << i->first.c_str() << " : (filesystem)" << i->second.fs_type;
 
-        mount:
         if(strcmp(mnted_system->name, i->first.c_str()) == 0) {
             BUFFER << " ~ [ Mounted ]";
         }
@@ -149,11 +129,8 @@ void VFS::lst_disks(std::vector<std::string>& parts) {
         BUFFER << "\n";
     }
     
-    BUFFER << "----------------  END  ----------------\n\n";
-    return;
-    
     no_disks:
-    BUFFER << "---------------------------------------\n";
+    BUFFER << "----------------  END  ----------------\n\n";
 }
 
 void VFS::init_server(std::vector<std::string>& args) {
@@ -273,4 +250,16 @@ FS* VFS::typetofs(const char* name, const char *fs_type) noexcept {
         case lib_::hash("rfs"): auto rm = disks->find(name); return new Client(rm->second.conn.addr, rm->second.conn.port); 
     }
     return new FAT32(name);
+}
+
+const bool VFS::is_mnted() const noexcept {
+    return this->mnted_system->fs == nullptr ? false : true;
+}
+
+VFS::system_t*& VFS::get_mnted_system() noexcept {
+    return mnted_system;
+}
+
+std::vector<VFS::cmd_t>* VFS::get_sys_cmds() noexcept {
+    return sys_cmds;
 }

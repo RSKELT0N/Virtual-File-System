@@ -4,17 +4,13 @@ Buffer* Buffer::mBuf_p;
 
 Buffer::Buffer() {
     this->mLock = new std::mutex();
-    this->mStream = new std::string();
+    this->mStream = new std::vector<char>();
 }
 
 Buffer::~Buffer() {
     delete mLock;
     delete mStream;
     free(mBuf_p);
-}
-
-Buffer::Buffer(const Buffer&) {
-
 }
 
 Buffer* Buffer::get_buffer() noexcept {
@@ -25,10 +21,11 @@ Buffer* Buffer::get_buffer() noexcept {
 }
 
 void Buffer::hold_buffer() noexcept {
-    if(!mStream->empty()) {
-        printf("%s", mStream->c_str());
-        mStream->clear();
-    }
+     if(!mStream->empty()) {
+         printf("\r");
+         print_stream();
+         mStream->clear();
+     }
     mLock->lock();
 }
 
@@ -36,15 +33,24 @@ void Buffer::release_buffer() noexcept {
     mLock->unlock();
     mStream->clear();
     delete mStream;
-    mStream = new std::string();
+    mStream = new std::vector<char>();
 }
 
-const char* Buffer::retain_buffer() noexcept {
-    return mStream->c_str();
+void Buffer::retain_buffer(char*& store) noexcept {
+    store = (char*)malloc(sizeof(char) * mStream->size());
+    std::copy(mStream->begin(), mStream->end(), store);
 }
+
+void Buffer::retain_buffer(std::byte*& store) noexcept {
+    store = (std::byte*)malloc(sizeof(std::byte) * (mStream->size()));
+    std::copy(mStream->begin(), mStream->end(), (char*)&(*store));
+}
+
 
 Buffer& Buffer::operator<<(const char* str) noexcept {
-    mStream->append(str);
+    for(int i = 0; i < strlen(str); i++) {
+        mStream->push_back(str[i]);
+    }
 
     return *(this);
 }
@@ -55,8 +61,21 @@ Buffer& Buffer::operator<<(uint64_t val) noexcept {
 
     lib_::itoa_(val, buffer, 10, amt);
     buffer[amt] = '\0';
-    mStream->append(buffer);
+
+    *this << buffer;
 
     return (*this);
+}
+
+void Buffer::append(char* str, size_t len) noexcept {
+    for(int i = 0; i < len; i++) {
+        mStream->push_back(str[i]);
+    }
+}
+
+void Buffer::print_stream() noexcept {
+    for(int i = 0; i < mStream->size(); i++) {
+        printf("%c", (*mStream)[i]);
+    }
 }
 

@@ -56,9 +56,16 @@ private:
 private:
     void connect() noexcept;
     void interpret_input(const pcontainer_t&) noexcept;
+    void ping() noexcept;
+    void ping_server() noexcept;
+    void set_recieved_ping(int8_t) noexcept;
+    void set_state(int8_t) noexcept;
 
 private:
     std::thread recv_;
+    std::thread ping_;
+    int8_t recieved_ping;
+
 };
 
 #endif // _CLIENT_H_

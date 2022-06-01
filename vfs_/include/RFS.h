@@ -41,8 +41,8 @@ protected:
     };
 
 public:
-    RFS();
-    ~RFS();
+    RFS() {};
+    virtual ~RFS() {};
     RFS(const RFS&) = delete;
     RFS(RFS&&) = delete;
 
@@ -71,6 +71,9 @@ public:
 
 public:
     constexpr static size_t BUFFER_SIZE = sizeof(packet_t) + sizeof(payload_t);
+    std::mutex psend;
+    std::mutex precieve;
+    std::mutex lock;
 };
 
 #endif // _RFS_H_

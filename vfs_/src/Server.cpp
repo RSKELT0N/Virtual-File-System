@@ -2,9 +2,6 @@
 
 extern void remote_interpret_cmd(VFS::system_cmd cmd, std::vector<std::string>& args, char*& payload, uint64_t size) noexcept;
 
-RFS::RFS() {}
-RFS::~RFS() {}
-
 Server::Server() {
     if(PORT_RANGE(CFG_DEFAULT_PORT)) {
         LOG(Log::WARNING, "Port specified is out of range, must be between (49151 - 65536)");
@@ -13,7 +10,7 @@ Server::Server() {
 
     clients = new std::vector<std::pair<uint32_t, client_t*>>();
     conn.m_port     = CFG_DEFAULT_PORT;
-    info.state      = CFG_SOCK_OPEN;
+    this->set_state(CFG_SOCK_OPEN);
     info.max_usr_c  = CFG_SOCK_LISTEN_AMT;
     init();
 }
@@ -22,7 +19,7 @@ Server::~Server() {
     for(int i = 0; i < clients->size(); i++) {
         (*clients)[i].second->state = CFG_SOCK_CLOSE;
     }
-    info.state = CFG_SOCK_CLOSE;
+    this->set_state(CFG_SOCK_CLOSE);
     BUFFER << LOG_str(Log::INFO, "Socket has been closed off for conntection");
 }
 
@@ -117,28 +114,24 @@ void Server::run() noexcept {
     close(conn.m_socket_fd);
 }
 
-void Server::handle(client_t* client) noexcept {
-    while(info.state == CFG_SOCK_OPEN && client->state == CFG_SOCK_OPEN) {
-        receive(*client);
-    }
-    BUFFER << LOG_str(Log::SERVER, "Client [" + find_ip(client->hint) + "] disconnected");
-    remove_client(client);
-    delete client;
-}
-
 void Server::add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept {
     client_t* tmp = new client_t;
     tmp->sock_fd = (int)sock;
     tmp->hint = hint;
     tmp->ip = find_ip(tmp->hint).c_str();
     tmp->state = CFG_SOCK_OPEN;
+    set_recieved_ping(*tmp, 1);
 
     clients->push_back(std::make_pair(clients->size(), tmp));
-    tmp->thrd = std::thread(&Server::handle, this, (tmp));
+    tmp->thrd = std::thread(&Server::handle, this, tmp);
     tmp->thrd.detach();
 
+    tmp->ping = std::thread(&Server::ping, this, (tmp));
+    tmp->ping.detach();
+    
     BUFFER.hold_buffer();
 
+    BUFFER << "\r";
     if(VFS::get_vfs()->is_mnted()) {
         BUFFER << LOG_str(Log::INFO, "RFS has a mounted disk");
         ((FAT32*)VFS::get_vfs()->get_mnted_system()->fs)->print_super_block();
@@ -149,6 +142,16 @@ void Server::add_client(const uint32_t& sock, const sockaddr_in& hint) noexcept 
     send_to_client(*tmp);
     BUFFER.release_buffer();
 }
+
+void Server::handle(client_t* client) noexcept {
+    while(info.state == CFG_SOCK_OPEN && client->state == CFG_SOCK_OPEN) {
+        receive(*client);
+    }
+    BUFFER << LOG_str(Log::SERVER, "Client [" + find_ip(client->hint) + "] disconnected");
+    remove_client(client);
+    delete client;
+}
+
 
 void Server::remove_client(client_t* client) noexcept {
     for(auto it = clients->begin(); it != clients->end(); it++) {
@@ -180,13 +183,20 @@ void Server::receive(client_t& client) noexcept {
         // deserialize packet.
         deserialize_packet(container->info, buffer);
 
+        if(container->info.cmd == (int8_t)VFS::ping) {
+            set_recieved_ping(client, 1);
+            delete container;
+            return;
+        }
+
         if(process_packet(container->info) == 0) {
             ::send(client.sock_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
-            client.state = CFG_SOCK_CLOSE;
+            set_state(client, CFG_SOCK_CLOSE);
             info.users_c--;
             delete container;
             return;
         }
+
         // check whether info has any payload.
         if(container->info.p_count == 0)
             goto no_payload;
@@ -204,7 +214,7 @@ void Server::receive(client_t& client) noexcept {
 
             if(process_payload(container->info, tmp) == 0) {
                 ::send(client.sock_fd, CFG_INVALID_PROTOCOL, strlen(CFG_INVALID_PROTOCOL), 0);
-                client.state = CFG_SOCK_CLOSE;
+                set_state(client, CFG_SOCK_CLOSE);
                 delete container;
                 return;
             }
@@ -225,8 +235,8 @@ void Server::send_to_client(client_t& client) noexcept {
     if(buffer_size == 0)
         return;
 
-    std::byte* stream = new std::byte[buffer_size];
-    memcpy(stream, BUFFER.retain_buffer(), buffer_size);
+    std::byte* stream;
+    BUFFER.retain_buffer(stream);
     stream[buffer_size] = std::byte{0};
 
     std::vector<std::string> flags;
@@ -234,7 +244,7 @@ void Server::send_to_client(client_t& client) noexcept {
 
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, BUFFER_SIZE);
-    container = generate_container((uint8_t)(VFS::system_cmd::internal), flags, stream, buffer_size);
+    container = generate_container((uint8_t)VFS::system_cmd::internal, flags, stream, buffer_size);
     serialize_packet(container->info, buffer);
     send(buffer, client, sizeof(packet_t));
 
@@ -244,7 +254,7 @@ void Server::send_to_client(client_t& client) noexcept {
         send(buffer, client, sizeof(payload_t));
     }
 
-    delete stream;
+    free(stream);
     if(container != nullptr)
         delete container;
     BUFFER.release_buffer();
@@ -261,7 +271,6 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
     if(container->info.p_count != 0) {
         size = retain_payloads(payload, *container->payloads);
     }
-    const char* stream = BUFFER.retain_buffer();
 
     remote_interpret_cmd(cmd, args, (char*&)payload, size);
     send_to_client(client);
@@ -279,6 +288,7 @@ void Server::interpret_input(pcontainer_t* container, client_t& client) noexcept
 }
 
 void Server::send(const char* buffer, client_t& client, size_t buffer_size) noexcept {
+    psend.lock();
     int number_of_bytes = {};
     size_t bytes_sent = {};
 
@@ -288,12 +298,15 @@ void Server::send(const char* buffer, client_t& client, size_t buffer_size) noex
 
         if(bytes_sent == -1) {
             BUFFER << LOG_str(Log::ERROR_, "Issue sending information back towards client");
+            psend.unlock();
             return;
         }
     }
+    psend.unlock();
 }
 
 void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
+    precieve.lock();
     int number_of_bytes = {};
     size_t bytes_received = {};
 
@@ -306,6 +319,7 @@ void Server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
             BUFFER << LOG_str(Log::ERROR_, "Issue receiving data from client");
         }
     }
+    precieve.unlock();
 }
 
 std::string Server::find_ip(const sockaddr_in& sock) const noexcept {
@@ -330,4 +344,60 @@ const char* Server::print_logs() const noexcept {
 
     const char* ret = tmp;
     return ret;
+}
+
+void Server::ping(client_t* client) noexcept {
+    int8_t unrecievedAmt = 0;
+
+    while(info.state == CFG_SOCK_OPEN && client->state == CFG_SOCK_OPEN) {
+
+        if(client->recieved_ping == 1) {
+            ping_client(client);            
+
+            set_recieved_ping(*client, 0);
+            unrecievedAmt ^= unrecievedAmt;
+        } else unrecievedAmt++;
+
+        if(unrecievedAmt == 5) {
+            BUFFER << LOG_str(Log::WARNING, "Client has not replied towards ping, disconnecting..");
+            client->state = CFG_SOCK_CLOSE;
+        }
+
+        sleep(1);
+    }
+}
+
+void Server::ping_client(client_t* client) noexcept {
+    std::string ping = "PING";
+    std::byte* bytes = new std::byte[ping.length()];
+    std::vector<std::string> flags;
+
+    std::memcpy(bytes, ping.data(), ping.length());
+
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
+
+    pcontainer_t* container = generate_container((uint8_t)VFS::system_cmd::ping, flags, bytes, ping.length());
+    serialize_packet(container->info, buffer);
+    send(buffer, *client, sizeof(packet_t));
+    delete bytes;
+}
+
+void Server::set_recieved_ping(client_t& client, int8_t val) noexcept {
+    lock.lock();
+    client.recieved_ping = val;
+    lock.unlock();
+}
+
+void Server::set_state(int8_t val) noexcept {
+    lock.lock();
+    this->info.state = val;
+    lock.unlock();
+
+}
+
+void Server::set_state(client_t& client, int8_t val) noexcept {
+    lock.lock();
+    client.state = val;
+    lock.unlock();
 }

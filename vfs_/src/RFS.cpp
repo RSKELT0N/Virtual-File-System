@@ -11,7 +11,7 @@ RFS::pcontainer_t* RFS::generate_container(uint8_t cmd, std::vector<std::string>
         for(const auto& a : args)
             flags += a + " ";
 
-        flags[flags.size() - 1] = '\0';
+        flags += '\0';
         
         uint64_t load_size = size;
         uint64_t amount_of_payloads = 0;
@@ -209,12 +209,6 @@ uint8_t RFS::process_packet(const packet_t& pckt) const noexcept {
 
     if(strncmp(pckt.signature, CFG_PACKET_SIGNATURE, CFG_PACKET_SIGNATURE_SIZE) != 0)
         return_val = 0;
-    
-    // if(pckt.size < (pckt.p_count * sizeof(payload_t)))
-    //     return_val = 0;
-    
-    // if(pckt.p_count > (pckt.size / sizeof(payload_t)))
-    //     return_val = 0;
 
     return return_val;
 }

@@ -1,6 +1,5 @@
 #include "../include/Log.h"
 
-
 Log *Log::logInstance = NULL;
 
 Log::~Log() {}

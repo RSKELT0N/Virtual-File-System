@@ -16,8 +16,8 @@ private:
     DiskDriver(const DiskDriver&&) = delete;
 
 public:
-    DiskDriver();
-    ~DiskDriver();
+    DiskDriver() {};
+    virtual ~DiskDriver() {};
 
     __attribute__((unused)) virtual ret_t rm() = 0;
     __attribute__((unused)) virtual ret_t close() = 0;
