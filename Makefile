@@ -31,9 +31,9 @@ finish:
 # clean
 #########################
 clean:
-	rm -rf $(BIN)/
-	rm -rf $(DISKS)/
-	rm $(TARGET)
+	rm -rf $(BIN)/ || true
+	rm -rf $(DISKS)/ || true
+	rm $(TARGET) || true
 #########################
 # rebuild
 #########################
