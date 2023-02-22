@@ -27,7 +27,7 @@ size_t& disk::get_addr() const noexcept {
 }
 
 diskdriver::ret_t disk::open(const char *pathname, const char *mode) {
-    this->cmpl_path_to_file = "disks/" + std::string(pathname);
+    this->cmpl_path_to_file = DISK_PATH + std::string(pathname);
     this->disk_name = pathname;
 
     this->file = fopen(cmpl_path_to_file.c_str(), mode);
@@ -42,7 +42,7 @@ diskdriver::ret_t disk::close() {
     if(file == nullptr)
         BUFFER << LOG_str(log::WARNING, "FD can't be closed, as it's not initialised");
 
-    uint32_t val = fclose(get_file());
+    int val = fclose(get_file());
 
     return val == EOF ? ERROR : VALID;
 }

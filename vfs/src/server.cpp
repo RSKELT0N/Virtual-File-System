@@ -52,8 +52,6 @@ void server::define_fd() noexcept {
 }
 
 void server::set_sockopt() noexcept {
-    int res = 0;
-
     #ifndef _WIN32
         setsockopt(conn->m_socket_fd, SOL_SOCKET, SO_REUSEADDR, &conn->opt, sizeof(conn->opt));
     #else
@@ -97,7 +95,7 @@ void server::run() noexcept {
         select(master_sock + 1, &master_set, nullptr, nullptr, &tv);
         
         if(FD_ISSET(master_sock, &master_set)) {
-            if((socket = accept(master_sock,(sockaddr *)&client,&clientSize)) == -1) {
+            if((socket = accept(master_sock,(sockaddr *)&client,&clientSize)) == -1u) {
                 BUFFER << LOG_str(log::WARNING, "client socket has failed to join");
                 continue;
             }
@@ -178,7 +176,6 @@ void server::receive(client_t& client) noexcept {
     select(client.sock_fd + 1, &master_set, nullptr, nullptr, &tv);
         
     if(FD_ISSET(client.sock_fd, &master_set)) {
-        int val = 0;
         char buffer[BUFFER_SIZE];
         memset(buffer, 0, BUFFER_SIZE);
         // declare container to store info and payload packets.
@@ -206,7 +203,7 @@ void server::receive(client_t& client) noexcept {
             #endif
             payload_t tmp;
             // check whether first payload has any mf flag set to 0x1 and then the last 0x0.
-            for(int i = 0; i < container->info.p_count; i++) {
+            for(size_t i = 0; i < container->info.p_count; i++) {
                 // reset buffer array.
                 memset(buffer, 0, BUFFER_SIZE);
                 memset(tmp.payload, 0, CFG_PAYLOAD_SIZE);
@@ -260,7 +257,7 @@ void server::send_to_client(client_t& client, type_t cmd, const std::string& ext
         #if _DEBUG_
         LOG(log::INFO, "Ping stopped");
         #endif
-        for(int i = 0; i < container->info.p_count; i++) {
+        for(size_t i = 0; i < container->info.p_count; i++) {
             memset(buffer, 0, BUFFER_SIZE);
             serialize_payload(container->payloads->at(i), buffer);
             send(buffer, client, sizeof(payload_t));
@@ -297,7 +294,7 @@ void server::interpret_input(const std::shared_ptr<pcontainer_t>& container, cli
 
     #if _DEBUG_
         print_packet(container->info);
-        for(int i = 0; i < container->payloads->size(); i++) {
+        for(size_t i = 0; i < container->payloads->size(); i++) {
             print_payload(container->payloads->at(i));
         }
     #endif // _DEBUG_
@@ -307,14 +304,14 @@ void server::interpret_input(const std::shared_ptr<pcontainer_t>& container, cli
 
 void server::send(const char* buffer, client_t& client, size_t buffer_size) noexcept {
     m_send.lock();
-    int number_of_bytes = {};
+    size_t number_of_bytes = {};
     size_t bytes_sent = {};
 
     while(number_of_bytes < buffer_size && (bytes_sent = ::send(client.sock_fd, buffer, (buffer_size - number_of_bytes), MSG_NOSIGNAL))) {
         number_of_bytes += bytes_sent;
         buffer += bytes_sent;
 
-        if(bytes_sent == -1) {
+        if(bytes_sent == -1u) {
             BUFFER << LOG_str(log::ERROR_, "Issue sending information back towards client");
             m_send.unlock();
             return;
@@ -325,14 +322,14 @@ void server::send(const char* buffer, client_t& client, size_t buffer_size) noex
 
 void server::recv_(char* buffer, client_t& client, size_t bytes) noexcept {
     m_recieve.lock();
-    int number_of_bytes = {};
+    size_t number_of_bytes = {};
     size_t bytes_received = {};
 
     while(number_of_bytes < bytes && (bytes_received = recv(client.sock_fd, buffer, (bytes - number_of_bytes), MSG_NOSIGNAL)) > 0) {
         number_of_bytes += bytes_received;
         buffer += bytes_received;
 
-        if(bytes_received == -1) {
+        if(bytes_received == -1u) {
             *buffer = '\0';
             BUFFER << LOG_str(log::ERROR_, "Issue receiving data from client");
         }

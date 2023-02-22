@@ -17,7 +17,7 @@ namespace VFS {
         buffer();
 
     public:
-        ~buffer() = default;;
+        ~buffer() = default;
         buffer(buffer&&) = delete;
         buffer(const buffer&) = delete;
 

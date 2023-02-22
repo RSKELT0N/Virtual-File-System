@@ -89,7 +89,7 @@ void client::handle_send(const char* str_cmd, uint8_t cmd, std::vector<std::stri
             LOG(log::INFO, "Ping stopped");
         #endif
         
-        for(int i = 0; i < container->info.p_count; i++) {
+        for(uint64_t i = 0; i < container->info.p_count; i++) {
             memset(buffer, 0, BUFFER_SIZE);
             // Serialize payload
             serialize_payload(container->payloads->at(i), buffer);
@@ -153,7 +153,7 @@ void client::receive_from_server() noexcept {
             #endif
             
             payload_t tmp_payload;
-            for(int i = 0; i < container->info.p_count; i++) {
+            for(uint64_t i = 0; i < container->info.p_count; i++) {
                 memset(buffer, 0, BUFFER_SIZE);
                 receive(buffer, sizeof(payload_t));
                 deserialize_payload(tmp_payload, buffer);
@@ -189,14 +189,14 @@ void client::interpret_input(std::unique_ptr<pcontainer_t> container) noexcept {
 
     uint64_t payload_size = 1;
 
-    for(int i = 0; i < container->info.p_count; i++)
+    for(uint64_t i = 0; i < container->info.p_count; i++)
         payload_size += container->payloads->at(i).header.size;
 
     std::unique_ptr<char[]> buffer = std::unique_ptr<char[]>(new char[payload_size]);
     memset(buffer.get(), 0, payload_size);
 
     uint64_t data_copied = 0;
-    for(int i = 0; i < container->info.p_count; i++) {
+    for(uint64_t i = 0; i < container->info.p_count; i++) {
         memcpy(&(buffer[data_copied]), container->payloads->at(i).payload, container->payloads->at(i).header.size);
         data_copied += container->payloads->at(i).header.size;
     }
@@ -224,14 +224,14 @@ void client::output_data(const pcontainer_t& container, char* buffer, int64_t si
 
 void client::send(const char* buffer, size_t buffer_size) noexcept {
     m_send.lock();
-    int number_of_bytes = {};
+    size_t number_of_bytes = {};
     size_t bytes_sent = {};
 
     while(number_of_bytes < buffer_size && (bytes_sent = ::send(conn.m_socket_fd, buffer, (buffer_size - number_of_bytes), MSG_NOSIGNAL))) {
         number_of_bytes += bytes_sent;
         buffer += bytes_sent;
 
-        if(bytes_sent == -1) {
+        if(bytes_sent == -1ul) {
             BUFFER << LOG_str(log::WARNING, "input could not be sent towards remote vfs");
             m_send.unlock();
             return;
@@ -242,14 +242,14 @@ void client::send(const char* buffer, size_t buffer_size) noexcept {
 
 uint8_t client::receive(char* buffer, size_t bytes) noexcept {
     m_recieve.lock();
-    int number_of_bytes = {};
+    size_t number_of_bytes = {};
     size_t bytes_received = {};
 
     while(number_of_bytes < bytes && (bytes_received = recv(conn.m_socket_fd, buffer, (bytes - number_of_bytes), MSG_NOSIGNAL)) > 0) {
         number_of_bytes += bytes_received;
         buffer += bytes_received;
 
-        if(bytes_received == -1) {
+        if(bytes_received == -1ul) {
             BUFFER << (LOG_str(log::WARNING, "client was unable to read incoming data from mounted server"));
             m_recieve.unlock();
             return -1;

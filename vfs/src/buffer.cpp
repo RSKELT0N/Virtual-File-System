@@ -46,7 +46,7 @@ void buffer::retain_buffer(std::shared_ptr<std::byte[]>& store) const noexcept {
 
 
 buffer& buffer::operator<<(const char* str) noexcept {
-    for(int i = 0; i < strlen(str); i++) {
+    for(size_t i = 0; i < strlen(str); i++) {
         mStream->push_back(str[i]);
     }
 
@@ -55,24 +55,25 @@ buffer& buffer::operator<<(const char* str) noexcept {
 
 buffer& buffer::operator<<(uint64_t val) noexcept {
     int amt = lib_::countDigit(val);
-    char buffer[amt];
+    char* buffer = new char[amt];
 
     lib_::itoa_(val, buffer, 10, amt);
     buffer[amt] = '\0';
 
     *this << buffer;
 
+    delete[] buffer;
     return (*this);
 }
 
 void buffer::append(char* str, size_t len) const noexcept {
-    for(int i = 0; i < len; i++) {
+    for(size_t i = 0; i < len; i++) {
         mStream->push_back(str[i]);
     }
 }
 
 void buffer::print_stream() const noexcept {
-    for(int i = 0; i < mStream->size(); i++) {
+    for(size_t i = 0; i < mStream->size(); i++) {
         printf("%c", (*mStream)[i]);
     }
 }

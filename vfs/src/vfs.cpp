@@ -20,7 +20,7 @@ vfs* vfs::get_vfs() noexcept {
     return mp_vfs;
 }
 
-void vfs::umnt_disk(std::vector<std::string> &parts) {
+void vfs::umnt_disk([[maybe_unused]]std::vector<std::string> &parts) {
     if(mnted_system->mp_fs != nullptr) {
         mnted_system->mp_fs.reset();
         mnted_system->mp_fs = nullptr;
@@ -29,7 +29,7 @@ void vfs::umnt_disk(std::vector<std::string> &parts) {
     } else BUFFER << LOG_str(log::WARNING, "There is no system currently mounted");
 }
 
-void vfs::mnt_disk(std::vector<std::string>& parts) {
+void vfs::mnt_disk([[maybe_unused]]std::vector<std::string>& parts) {
     if(disks->find(parts[1]) == disks->end()) {
         BUFFER << LOG_str(log::WARNING, "disk does not exist within the vfs");
 
@@ -54,7 +54,7 @@ void vfs::mnt_disk(std::vector<std::string>& parts) {
     else this->mnted_system->access  = &vfs::ifs_cmd_func;
 }
 
-void vfs::add_disk(std::vector<std::string>& parts) {
+void vfs::add_disk([[maybe_unused]]std::vector<std::string>& parts) {
     if(disks->find(parts[2]) != disks->end()) {
         BUFFER << LOG_str(log::WARNING, " There is an existing disk with that name already");
         return;
@@ -68,7 +68,7 @@ void vfs::add_disk(std::vector<std::string>& parts) {
     } else (*disks).insert(std::make_pair(parts[2], system_t{parts[2].c_str(), nullptr, DEFAULT_FS, nullptr, {}})); // specified fs
 }
 
-void vfs::rm_disk(std::vector<std::string>& parts) {
+void vfs::rm_disk([[maybe_unused]]std::vector<std::string>& parts) {
     fs* tmp = (disks->find(parts[2])->second.mp_fs.get());
 
     if(tmp) {
@@ -80,7 +80,7 @@ void vfs::rm_disk(std::vector<std::string>& parts) {
     disks->erase(parts[2]); // deletes file system, on heap.
 }
 
-void vfs::add_remote(std::vector<std::string>& parts) {
+void vfs::add_remote([[maybe_unused]]std::vector<std::string>& parts) {
 
     if(disks->find(parts[2]) != disks->end()) {
         BUFFER << LOG_str(log::WARNING, "There is an existing remote connection with that name already");
@@ -90,7 +90,7 @@ void vfs::add_remote(std::vector<std::string>& parts) {
     (*disks).insert(std::make_pair(parts[2], system_t{parts[2].c_str(), nullptr, "rfs", nullptr, system_t::sock_conn_t{parts[3].c_str(), atoi(parts[4].c_str())}})); // add rfs system with ip and address
 }
 
-void vfs::rm_remote(std::vector<std::string>& parts) {
+void vfs::rm_remote([[maybe_unused]]std::vector<std::string>& parts) {
     if(mnted_system->mp_fs)
         if(disks->find(parts[2])->second.mp_fs == mnted_system->mp_fs)
             umnt_disk(parts); // erases mounted system information, if rfs deleted is mounted.
@@ -98,7 +98,7 @@ void vfs::rm_remote(std::vector<std::string>& parts) {
     disks->erase(parts[2]); // deletes file system, on heap.
 }
 
-void vfs::lst_disks(std::vector<std::string>& parts) {
+void vfs::lst_disks([[maybe_unused]]std::vector<std::string>& parts) {
     BUFFER << "\r-----------------  vfs  ---------------\n";
 
     if(disks->empty()) {
@@ -122,7 +122,7 @@ void vfs::lst_disks(std::vector<std::string>& parts) {
     BUFFER << "----------------  END  ----------------\n\n";
 }
 
-void vfs::init_server(std::vector<std::string>& args) {
+void vfs::init_server([[maybe_unused]]std::vector<std::string>& args) {
     if(server == nullptr) {
         server = std::make_unique<RFS::server>();
         return;
@@ -158,7 +158,7 @@ void vfs::init_sys_cmds() noexcept {
 void vfs::control_vfs(const std::vector<std::string>& parts) noexcept { // checks vfs flags, if none print help. if not, carry out function.
     for(auto & sys_cmd : *sys_cmds) {
         if(vfs::system_cmd::vfs_ == sys_cmd.cmd) {
-            for(int j = 0; j < sys_cmd.flags.size(); j++) {
+            for(size_t j = 0; j < sys_cmd.flags.size(); j++) {
                 if(parts[0] == sys_cmd.flags.at(j).name) {
                     std::vector<std::string> tmp(parts);
                     (*this.*sys_cmd.flags.at(j).func)(tmp);
@@ -171,7 +171,7 @@ void vfs::control_vfs(const std::vector<std::string>& parts) noexcept { // check
 }
 
 
-void vfs::ifs_cmd_func(vfs::system_cmd cmd, std::vector<std::string>& args, const char* buffer, uint64_t size, int8_t options) noexcept {
+void vfs::ifs_cmd_func([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string>& args, [[maybe_unused]]const char* buffer, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     switch(cmd) {
         case vfs::system_cmd::mkdir: (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->mkdir(args[0].c_str()));           break;
         case vfs::system_cmd::cd:    (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cd(args[0].c_str()));              break;
@@ -181,16 +181,19 @@ void vfs::ifs_cmd_func(vfs::system_cmd cmd, std::vector<std::string>& args, cons
         case vfs::system_cmd::mv:    (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->mv(args));                         break;
         case vfs::system_cmd::cat:   (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cat(args[0].c_str(), options));             break;
 
-        case vfs::system_cmd::cp:    if(args[0] == "imp")
+        case vfs::system_cmd::cp:    if(args[0] == "imp") {
                                         (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cp_imp(args[1].c_str(), args[2].c_str()));
-                                    else if(args[0] == "exp")
+                                     } else if(args[0] == "exp") {
                                         (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cp_exp(args[1].c_str(), args[2].c_str()));
-                                    else (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cp(args[0].c_str(), args[1].c_str())); break;
+                                     } else {
+                                        (dynamic_cast<IFS::ifs*>(vfs::get_vfs()->get_mnted_system()->mp_fs.get())->cp(args[0].c_str(), args[1].c_str())); 
+                                        break;
+                                     }
         default: break;
     }
 }
 
-void vfs::rfs_cmd_func(vfs::system_cmd cmd, std::vector<std::string>& args, const char* buffer_, uint64_t size, int8_t options) noexcept {
+void vfs::rfs_cmd_func([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string>& args, [[maybe_unused]]const char* buffer_, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     ((RFS::client*)(RFS::rfs*)vfs::get_vfs()->get_mnted_system()->mp_fs.get())->handle_send(syscmd_str[(uint8_t)cmd], (uint8_t)cmd, args);
 }
 
@@ -217,7 +220,7 @@ void vfs::vfs_help() const noexcept {
 }
 
 void vfs::load_disks() noexcept {
-   std::string path = "disks/";
+   std::string path = DISK_PATH;
    std::vector<std::string> func = {"ifs", "add", ""};
 
    struct dirent *entry;
@@ -241,14 +244,9 @@ std::shared_ptr<fs> vfs::typetofs(const char* name, const char *fs_type) noexcep
     return std::make_shared<IFS::fat32>(name);
 }
 
-const bool vfs::is_mnted() const noexcept {
+bool vfs::is_mnted() const noexcept {
     return this->mnted_system->mp_fs != nullptr;
 }
 
-std::shared_ptr<vfs::system_t>& vfs::get_mnted_system() noexcept {
-    return mnted_system;
-}
-
-std::shared_ptr<std::vector<vfs::cmd_t>> vfs::get_sys_cmds() noexcept {
-    return sys_cmds;
-}
+std::shared_ptr<vfs::system_t>& vfs::get_mnted_system() noexcept {return mnted_system;}
+std::shared_ptr<std::vector<vfs::cmd_t>> vfs::get_sys_cmds() noexcept {return sys_cmds;}

@@ -66,12 +66,12 @@ std::unique_ptr<rfs::pcontainer_t> rfs::generate_container(uint8_t cmd, std::vec
 
         m_lock.unlock();
 
-        return std::move(con);
+        return con;
 }
 
 uint64_t rfs::retain_payloads(std::shared_ptr<char[]>& buffer, std::vector<payload_t>& pylds) noexcept {
     uint64_t size = 0;
-    for(int i = 0; i < pylds.size(); i++)
+    for(size_t i = 0; i < pylds.size(); i++)
         size += pylds[i].header.size;
 
     if(size == 0)
@@ -81,7 +81,7 @@ uint64_t rfs::retain_payloads(std::shared_ptr<char[]>& buffer, std::vector<paylo
     memset(buffer.get(), 0, size);
     
     uint64_t data_copied = 0;
-    for(int i = 0; i < pylds.size(); i++) {
+    for(size_t i = 0; i < pylds.size(); i++) {
         memcpy(buffer.get() + data_copied, pylds[i].payload, pylds[i].header.size);
         data_copied += pylds[i].header.size;
     }
@@ -93,7 +93,7 @@ uint64_t rfs::retain_payloads(std::shared_ptr<char[]>& buffer, std::vector<paylo
 void rfs::serialize_packet(packet_t& pckt, char* buffer) noexcept {
     // Store signature.
     char* sign_p = (char*)buffer;
-    int sign_c = 0;
+    size_t sign_c = 0;
 
     while(sign_c < CFG_PACKET_SIGNATURE_SIZE) {
         *sign_p = pckt.signature[sign_c];
@@ -111,7 +111,7 @@ void rfs::serialize_packet(packet_t& pckt, char* buffer) noexcept {
     *int_p = pckt.cmd; int_p++;
     // Store hash char.
     char* hash_p = (char*)int_p;
-    int hash_c = 0;
+    size_t hash_c = 0;
     while(hash_c < CFG_PACKET_HASH_SIZE) {
         *hash_p = pckt.hash[hash_c]; 
         hash_p++;
@@ -119,7 +119,7 @@ void rfs::serialize_packet(packet_t& pckt, char* buffer) noexcept {
     }
     // Store flags char.
     char* char_p = (char*)hash_p;
-    int flag_c = 0;
+    size_t flag_c = 0;
 
     while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
         *char_p = pckt.flags[flag_c];
@@ -131,7 +131,7 @@ void rfs::serialize_packet(packet_t& pckt, char* buffer) noexcept {
 void rfs::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     // Store signature.
     char* sign_p = (char*)buffer;
-    int sign_c = 0;
+    size_t sign_c = 0;
 
     while(sign_c < CFG_PACKET_SIGNATURE_SIZE) {
         pckt.signature[sign_c] = *sign_p;
@@ -149,7 +149,7 @@ void rfs::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     pckt.cmd = *int_p; int_p++;
     // Store hash char.
     char* hash_p = (char*)int_p;
-    int hash_c = 0;
+    size_t hash_c = 0;
     while(hash_c < CFG_PACKET_HASH_SIZE) {
         pckt.hash[hash_c] = *hash_p; 
         hash_p++;
@@ -157,7 +157,7 @@ void rfs::deserialize_packet(packet_t& pckt, char* buffer) noexcept {
     }
     // Store flags into struct.
     char* char_p = (char*)hash_p;
-    int flag_c = 0;
+    size_t flag_c = 0;
 
     while(flag_c < CFG_FLAGS_BUFFER_SIZE) {
         pckt.flags[flag_c] = *char_p;
@@ -173,7 +173,7 @@ void rfs::serialize_payload(payload_t& pyld, char* buffer) noexcept {
 
     //Store payload.
     char* char_p = (char*)header_p;
-    int pyld_c = 0;
+    size_t pyld_c = 0;
 
     while(pyld_c < CFG_PAYLOAD_SIZE) {
         *char_p = pyld.payload[pyld_c];
@@ -188,7 +188,7 @@ void rfs::deserialize_payload(payload_t& pyld, char* buffer) noexcept {
     pyld.header = *header_p; header_p++;
     //Store payload into struct.
     char* char_p = (char*)header_p;
-    int pyld_c = 0;
+    size_t pyld_c = 0;
 
     while(pyld_c < CFG_PAYLOAD_SIZE) {
         pyld.payload[pyld_c] = *char_p;
@@ -231,7 +231,7 @@ void rfs::print_packet(const packet_t& pckt) const noexcept {
 void rfs::print_payload(const payload_t& pyld) const noexcept {
     std::cout << "\n---- PAYLOAD ----\n -> index : [" << pyld.header.index << "]\n -> size : [" << pyld.header.size << "]\n -> payload : [";
     std::string stream = "";
-    for(int i = 0; i < CFG_PAYLOAD_SIZE; i++) {
+    for(size_t i = 0; i < CFG_PAYLOAD_SIZE; i++) {
         stream += pyld.payload[i];
     }
     std::cout << stream.c_str();
@@ -240,9 +240,8 @@ void rfs::print_payload(const payload_t& pyld) const noexcept {
 
 std::shared_ptr<char[]> rfs::generate_hash() noexcept {
     std::shared_ptr<char[]> hash = std::shared_ptr<char[]>(new char[CFG_PACKET_HASH_SIZE]);
-
-
-    for(int i = 0; i < CFG_PACKET_HASH_SIZE; i++) {
+    
+    for(size_t i = 0; i < CFG_PACKET_HASH_SIZE; i++) {
         int r = rand() % 122 + 36;
         hash[i] = (char)r;
     }

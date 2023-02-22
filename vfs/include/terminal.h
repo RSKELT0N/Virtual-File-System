@@ -43,10 +43,10 @@ namespace VFS {
         void cmd_map() noexcept;
         vfs::system_cmd validate_cmd(std::vector<std::string>& parts) noexcept;
 
-        void print_help(vfs::system_cmd, std::vector<std::string>,    char*&, uint64_t size = 0, int8_t options = 0)noexcept;
-        void clear_scr(vfs::system_cmd, std::vector<std::string>,     char*&, uint64_t size = 0, int8_t options = 0) noexcept;
-        void map_vfs_funct(vfs::system_cmd, std::vector<std::string>, char*&, uint64_t size = 0, int8_t options = 0) noexcept;
-        void map_sys_funct(vfs::system_cmd, std::vector<std::string>, char*&, uint64_t size = 0, int8_t options = 0) noexcept;
+        void print_help([[maybe_unused]]vfs::system_cmd, std::vector<std::string>,    [[maybe_unused]]char*&, [[maybe_unused]]uint64_t size = 0, [[maybe_unused]]int8_t options = 0)noexcept;
+        void clear_scr([[maybe_unused]]vfs::system_cmd, std::vector<std::string>,     [[maybe_unused]]char*&, [[maybe_unused]]uint64_t size = 0, [[maybe_unused]]int8_t options = 0) noexcept;
+        void map_vfs_funct([[maybe_unused]]vfs::system_cmd, std::vector<std::string>, [[maybe_unused]]char*&, [[maybe_unused]]uint64_t size = 0, [[maybe_unused]]int8_t options = 0) noexcept;
+        void map_sys_funct([[maybe_unused]]vfs::system_cmd, std::vector<std::string>, [[maybe_unused]]char*&, [[maybe_unused]]uint64_t size = 0, [[maybe_unused]]int8_t options = 0) noexcept;
 
     public:
         vfs::system_cmd valid_vfs(std::vector<std::string>& parts)   noexcept;

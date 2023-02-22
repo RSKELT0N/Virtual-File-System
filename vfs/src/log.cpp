@@ -13,7 +13,7 @@ std::shared_ptr<VFS::log> log::getInstance()
     return logInstance;
 }
 
-void log::logger(Type type, int lineNumber, const std::string& log, std::string col)
+void log::logger(Type type, int linenumber, const std::string& log, std::string col)
 {
     std::stringstream ss;
     switch (type)
@@ -35,10 +35,8 @@ void log::logger(Type type, int lineNumber, const std::string& log, std::string 
         break;
     }
 
-    lineNumber = 0;
-
     ss << colour.RESET;
-    ss << "[ " << col << typeMap[type] << colour.RESET << " ] ";
+    ss << "[ " << col << typeMap[type] << ": [" << linenumber << "]" << colour.RESET << " ] ";
     ss << log;
     ss << colour.RESET;
 
@@ -48,7 +46,7 @@ void log::logger(Type type, int lineNumber, const std::string& log, std::string 
         exit(EXIT_FAILURE);
 }
 
-std::string log::logger_str(Type type, int lineNumber, const std::string& log, std::string col) {
+std::string log::logger_str(Type type, const std::string& log, std::string col) {
     std::stringstream ss;
     switch (type)
     {
@@ -68,8 +66,6 @@ std::string log::logger_str(Type type, int lineNumber, const std::string& log, s
         col = log::colour.RED;
         break;
     }
-
-    lineNumber = 0;
 
     ss << colour.RESET;
     ss << "[ " << col << typeMap.find(type)->second << colour.RESET << " ] ";

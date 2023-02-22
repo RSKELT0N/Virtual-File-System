@@ -1,6 +1,6 @@
 #include "../include/terminal.h"
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]]int argc, [[maybe_unused]]char** argv) {
     BUFFER.hold_buffer();
     VFS::vfs::get_vfs()->load_disks();
 

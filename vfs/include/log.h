@@ -9,7 +9,7 @@
 
 #define LOG_INSTANCE       (Log::getInstance().get())
 #define LOG(type, msg)     (log::getInstance().get()->logger(type, __LINE__, msg, ""))
-#define LOG_str(type, msg) (log::getInstance().get()->logger_str(type, __LINE__, msg, "").c_str())
+#define LOG_str(type, msg) (log::getInstance().get()->logger_str(type, msg, "").c_str())
 
 namespace VFS {
 
@@ -49,7 +49,7 @@ namespace VFS {
 
     public:
         void logger(Type, int, const std::string&, std::string);
-        std::string logger_str(Type, int, const std::string&, std::string);
+        std::string logger_str(Type, const std::string&, std::string);
 
     private:
         static std::shared_ptr<log> logInstance;

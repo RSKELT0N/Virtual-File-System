@@ -14,8 +14,8 @@ namespace VFS {
         } ret_t;
 
     public:
-        diskdriver() = default;;
-        virtual ~diskdriver() = default;;
+        diskdriver() = default;
+        virtual ~diskdriver() = default;
         diskdriver(const diskdriver&) = delete;
         diskdriver(const diskdriver&&) = delete;
 

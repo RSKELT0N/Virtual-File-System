@@ -16,18 +16,18 @@ namespace VFS::RFS {
     protected:
         struct packet_t {
             char signature[CFG_PACKET_SIGNATURE_SIZE]{};
-            uint64_t size = {};
-            uint64_t p_count = {};
-            int8_t cmd = {};
+            uint64_t size = {0};
+            uint64_t p_count = {0};
+            int8_t cmd = {0};
             char hash[CFG_PACKET_HASH_SIZE]{};
             char flags[CFG_FLAGS_BUFFER_SIZE]{};
         } __attribute__((packed));
 
         struct payload_header_t {
             char hash[CFG_PACKET_HASH_SIZE]{};
-            uint64_t index{};
-            uint64_t size{};
-            uint8_t mf : 1{};
+            uint64_t index{0};
+            uint64_t size{0};
+            uint8_t mf : 1;
         } __attribute__((packed));
 
         struct payload_t {

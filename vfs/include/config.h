@@ -19,10 +19,10 @@
 
 #define _DEBUG_ 0
 
-#define CFG_USER_SPACE_SIZE       (uint64_t)(MB(480))
-#define CFG_CLUSTER_SIZE          (uint64_t)(KB(12))
-#define CFG_MAX_USER_SPACE_SIZE   (uint64_t)(GB(4))
-#define CFG_MIN_USER_SPACE_SIZE   (uint64_t)(MB(24))
+#define CFG_USER_SPACE_SIZE       (size_t)(MB(480))
+#define CFG_CLUSTER_SIZE          (size_t)(KB(12))
+#define CFG_MAX_USER_SPACE_SIZE   (size_t)(GB(4))
+#define CFG_MIN_USER_SPACE_SIZE   (size_t)(MB(24))
 
 #define CFG_SOCK_OPEN             (int8_t)1
 #define CFG_SOCK_CLOSE            (int8_t)0

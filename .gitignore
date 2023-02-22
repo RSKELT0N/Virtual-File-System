@@ -1,0 +1,3 @@
+# Ignoring specified folders and files
+build/
+*.o

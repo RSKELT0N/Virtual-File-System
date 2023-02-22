@@ -103,7 +103,7 @@ void terminal::translate_remote_cmd(vfs::system_cmd& cmd, std::vector<std::strin
     }
 }
 
-void terminal::print_help(vfs::system_cmd cmd, std::vector<std::string> args, char*&, uint64_t size, int8_t options) noexcept {
+void terminal::print_help([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string> args, [[maybe_unused]]char*&, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     BUFFER << "\n--------- Help ---------\n";
     uint32_t j = 0;
     for(auto i = m_vfs->get_sys_cmds()->begin(); i != m_vfs->get_sys_cmds()->end(); i++) {
@@ -115,11 +115,11 @@ void terminal::print_help(vfs::system_cmd cmd, std::vector<std::string> args, ch
     BUFFER << "---------  End  ---------\n";
 }
 
-void terminal::clear_scr(vfs::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size, int8_t options) noexcept {
+void terminal::clear_scr([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string> args, [[maybe_unused]]char*& payload, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     printf(CLEAR_SCR);
 }
 
-void terminal::map_vfs_funct(vfs::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size, int8_t options) noexcept {
+void terminal::map_vfs_funct([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string> args, [[maybe_unused]]char*& payload, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     sys_lock->lock();
     if(m_vfs->is_mnted() && strcmp(m_vfs->get_mnted_system()->fs_type, "rfs") == 0) {
         sys_lock->unlock();
@@ -128,7 +128,7 @@ void terminal::map_vfs_funct(vfs::system_cmd cmd, std::vector<std::string> args,
     sys_lock->unlock();
 }
 
-void terminal::map_sys_funct(vfs::system_cmd cmd, std::vector<std::string> args, char*& payload, uint64_t size, int8_t options) noexcept {
+void terminal::map_sys_funct([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector<std::string> args, [[maybe_unused]]char*& payload, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options) noexcept {
     if(!m_vfs->is_mnted()) {
         BUFFER << LOG_str(log::WARNING, "Please mount a system before carrying out a sys call");
         return;

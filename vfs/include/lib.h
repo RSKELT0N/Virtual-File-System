@@ -46,7 +46,7 @@ namespace VFS {
         }
 
         inline int itoa_(int value, char *sp, int radix, int amt) {
-            char tmp[amt];// be careful with the length of the buffer
+            char* tmp = new char[amt];
             char *tp = tmp;
             uint64_t i = 0;
             unsigned v = 0;
@@ -76,6 +76,7 @@ namespace VFS {
             while (tp > tmp)
                 *sp++ = *--tp;
 
+            delete[] tmp;
             return len;
         }
 

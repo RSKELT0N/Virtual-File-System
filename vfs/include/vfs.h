@@ -59,9 +59,9 @@ namespace VFS {
             const char *name;
             std::shared_ptr<VFS::fs> mp_fs = nullptr;
             const char *fs_type;
+            void (vfs::*access)(system_cmd cmd, std::vector <std::string> &args, const char *, uint64_t size, int8_t options);
             sock_conn_t conn;
 
-            void (vfs::*access)(system_cmd cmd, std::vector <std::string> &args, const char *, uint64_t size, int8_t options);
 
             ~system_t() = default;
             system_t(const char *nme, std::shared_ptr<VFS::fs> _fs, const char *type, void (vfs::*ptr)(vfs::system_cmd, std::vector <std::string> &, const char *, uint64_t, int8_t), sock_conn_t hint) : name(nme), mp_fs(_fs), fs_type(type), access(ptr), conn(hint) {};
@@ -76,29 +76,29 @@ namespace VFS {
         ~vfs() = default;
 
     private:
-        void mnt_disk(std::vector <std::string> &);
-        void add_disk(std::vector <std::string> &);
-        void rm_disk(std::vector <std::string> &);
-        void add_remote(std::vector <std::string> &);
-        void rm_remote(std::vector <std::string> &);
-        void lst_disks(std::vector <std::string> &);
-        void init_server(std::vector <std::string> &);
+        void mnt_disk([[maybe_unused]]std::vector <std::string> &);
+        void add_disk([[maybe_unused]]std::vector <std::string> &);
+        void rm_disk([[maybe_unused]]std::vector <std::string> &);
+        void add_remote([[maybe_unused]]std::vector <std::string> &);
+        void rm_remote([[maybe_unused]]std::vector <std::string> &);
+        void lst_disks([[maybe_unused]]std::vector <std::string> &);
+        void init_server([[maybe_unused]]std::vector <std::string> &);
         void vfs_help() const noexcept;
 
     public:
         void init_sys_cmds() noexcept;
-        void umnt_disk(std::vector <std::string> &);
+        void umnt_disk([[maybe_unused]]std::vector <std::string> &);
         std::shared_ptr <fs> typetofs(const char *name, const char *fs_type) noexcept;
         void control_vfs(const std::vector <std::string> &) noexcept;
         void control_ifs(std::vector <std::string> &) noexcept;
         void control_rfs(std::vector <std::string> &) noexcept;
-        void ifs_cmd_func(vfs::system_cmd cmd, std::vector <std::string> &args, const char *buffer, uint64_t size, int8_t options = 0) noexcept;
-        void rfs_cmd_func(vfs::system_cmd cmd, std::vector <std::string> &args, const char *buffer, uint64_t size, int8_t options = 0) noexcept;
+        void ifs_cmd_func([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector <std::string> &args, [[maybe_unused]]const char *buffer, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options = 0) noexcept;
+        void rfs_cmd_func([[maybe_unused]]vfs::system_cmd cmd, [[maybe_unused]]std::vector <std::string> &args, [[maybe_unused]]const char *buffer, [[maybe_unused]]uint64_t size, [[maybe_unused]]int8_t options = 0) noexcept;
 
     public:
         void load_disks() noexcept;
         static vfs *get_vfs() noexcept;
-        const bool is_mnted() const noexcept;
+        bool is_mnted() const noexcept;
         std::shared_ptr <vfs::system_t> &get_mnted_system() noexcept;
         std::shared_ptr <std::vector<vfs::cmd_t>> get_sys_cmds() noexcept;
 

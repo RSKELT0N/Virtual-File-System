@@ -11,8 +11,8 @@
 #include "lib.h"
 #include "vfs.h"
 
-#define abs_(a,b)            ((a) < (b) ? (b) - (a) : (a) - (b))
-#define min_(a,b)            ((a) < (b) ? (a) : (b))
+#define abs_(a,b)            (int)((a) < (b) ? (b) - (a) : (a) - (b))
+#define min_(a,b)            (int)((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH     (uint8_t)10
 #define DIR_NAME_LENGTH      (uint8_t)10
 #define UNDEF_START_CLUSTER  0
@@ -70,7 +70,7 @@ namespace VFS::IFS {
             std::shared_ptr<dir_entry_t[]> dir_entries = {};
 
             ~dir_t() = default;
-        } __attribute__((packed));
+        };
 
         struct dir_entr_ret_t {
             std::shared_ptr<dir_t> m_dir = nullptr;
@@ -78,7 +78,7 @@ namespace VFS::IFS {
 
             ~dir_entr_ret_t() = default;
             dir_entr_ret_t(std::shared_ptr<dir_t> dir, dir_entry_t* entry) : m_dir(std::move(dir)), m_entry(std::move(entry)) { };
-        } __attribute__((packed));
+        };
 
     public:
         explicit fat32(const char* disk_name);

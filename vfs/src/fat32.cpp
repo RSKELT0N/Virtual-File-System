@@ -216,7 +216,7 @@ void fat32::store_dir(std::shared_ptr<dir_t>& directory)  noexcept {
 void fat32::save_dir(std::shared_ptr<dir_t>& directory) noexcept {
     std::unique_ptr<std::vector<uint32_t>> alloc_clu = get_list_of_clu(directory->dir_header.start_cluster_index);
 
-    for (int i = 0; i < alloc_clu->size(); i++) {
+    for (size_t i = 0; i < alloc_clu->size(); i++) {
         m_fat_table[(*alloc_clu)[i]] = UNALLOCATED_CLUSTER;
         m_free_clusters->insert((*alloc_clu)[i]);
     }
@@ -314,7 +314,7 @@ std::shared_ptr<fat32::dir_t> fat32::read_dir(const uint32_t & start_clu) noexce
     uint32_t curr_clu = start_clu;
     curr_clu = m_fat_table[curr_clu];
 
-    for (int i = 0; i < amt_of_clu_used - 1; i++) {
+    for (uint32_t i = 0; i < (amt_of_clu_used - 1); i++) {
         size_t addr_offset = ROOT_START_ADDR + (CLUSTER_SIZE * curr_clu);
 
         m_disk->seek(addr_offset);
@@ -400,13 +400,13 @@ int32_t fat32::store_file(std::shared_ptr<std::byte[]>& data, uint64_t data_size
     auto clu_list = std::unique_ptr<uint32_t[]>(new uint32_t[amt_of_clu_needed]);
     memset(clu_list.get(), 0, amt_of_clu_needed);
 
-    for (int i = 0; i < amt_of_clu_needed; i++) {
+    for (uint32_t i = 0; i < amt_of_clu_needed; i++) {
         clu_list[i] = attain_clu();
     }
 
     first_cluster = clu_list[0];
 
-    for (int i = 0; i < amt_of_clu_needed - 1; i++) {
+    for (uint32_t  i = 0; i < (amt_of_clu_needed - 1); i++) {
         size_t off_adr = ROOT_START_ADDR + (CLUSTER_SIZE * clu_list[i]);
 
         m_disk->seek(off_adr);
@@ -422,7 +422,7 @@ int32_t fat32::store_file(std::shared_ptr<std::byte[]>& data, uint64_t data_size
     fflush(((disk*)m_disk.get())->get_file());
 
     m_fat_table[first_cluster] = clu_list[0];
-    for (int i = 0; i < amt_of_clu_needed; i++)
+    for (uint32_t i = 0; i < amt_of_clu_needed; i++)
         m_fat_table[clu_list[i]] = clu_list[i + 1];
     m_fat_table[clu_list[amt_of_clu_needed - 1]] = EOF_CLUSTER;
 
@@ -434,7 +434,7 @@ void fat32::insert_int_file(std::shared_ptr<dir_t>& dir, std::shared_ptr<std::by
 
     uint32_t start_clu = store_file(data, size);
 
-    if (start_clu == -1) {
+    if (start_clu == -1u) {
         BUFFER << (LOG_str(log::WARNING, "file could not be stored"));
         return;
     }
@@ -455,7 +455,7 @@ void fat32::insert_ext_file(std::shared_ptr<dir_t>& curr_dir, const char* path, 
     get_ext_file_buffer(path, buffer);
     uint32_t start_clu = store_file(buffer, (uint64_t)size);
 
-    if (start_clu == -1) {
+    if (start_clu == -1u) {
         BUFFER << (LOG_str(log::WARNING, "file could not be stored"));
         return;
     }
@@ -468,7 +468,7 @@ void fat32::delete_entry(std::unique_ptr<dir_entr_ret_t>& entry) noexcept {
 
     std::unique_ptr<std::vector<uint32_t>> entry_alloc_clu = get_list_of_clu(entry->m_entry->start_cluster_index);
 
-    for (int i = 0; i < entry_alloc_clu->size(); i++) {
+    for (size_t i = 0; i < entry_alloc_clu->size(); i++) {
         m_fat_table[(*entry_alloc_clu)[i]] = UNALLOCATED_CLUSTER;
         m_free_clusters->insert((*entry_alloc_clu)[i]);
     }
@@ -495,7 +495,7 @@ std::unique_ptr<fat32::dir_entr_ret_t> fat32::parsePath(std::vector<std::string>
     auto curr_dir = m_curr_dir;
     fat32::dir_entry_t* tmp_entr;
 
-    for (int i = 0; i < path.size() - 1; i++) {
+    for (size_t i = 0; i < (path.size() - 1); i++) {
          tmp_entr = find_entry(curr_dir, path[i].c_str(), 0x1);
 
         if (tmp_entr == nullptr && shd_exst) {
@@ -545,16 +545,16 @@ std::unique_ptr<std::vector<uint32_t>> fat32::get_list_of_clu(const uint32_t & s
         alloc_clu->push_back(next_clu);
         curr_clu = next_clu;
     }
-    return std::move(alloc_clu);
+    return alloc_clu;
 }
 
 void fat32::rm_entr_mem(std::shared_ptr<dir_t>& dir, const char* name) noexcept {
 
     std::shared_ptr<dir_entry_t[]> tmp = std::shared_ptr<dir_entry_t[]>(new dir_entry_t[dir->dir_header.dir_entry_amt - 1]);
 
-    for (int i = 0; i < dir->dir_header.dir_entry_amt; i++) {
+    for (uint32_t i = 0; i < dir->dir_header.dir_entry_amt; i++) {
         if (strcmp(dir->dir_entries[i].dir_entry_name, name) == 0) {
-            for (int j = i; j < dir->dir_header.dir_entry_amt - 1; j++) {
+            for (uint32_t j = i; j < dir->dir_header.dir_entry_amt - 1; j++) {
                 tmp[j] = dir->dir_entries[j + 1];
             }
             break;
@@ -572,7 +572,7 @@ void fat32::add_new_entry(std::shared_ptr<dir_t>& curr_dir, const char* name, co
     std::shared_ptr<dir_entry_t[]> tmp_entries = curr_dir->dir_entries;
     curr_dir->dir_entries = std::shared_ptr<dir_entry_t[]>(new dir_entry_t[curr_dir->dir_header.dir_entry_amt]);
 
-    for (int i = 0; i < curr_dir->dir_header.dir_entry_amt - 1; i++)
+    for (uint32_t i = 0; i < curr_dir->dir_header.dir_entry_amt - 1; i++)
         curr_dir->dir_entries[i] = tmp_entries[i];
 
     strcpy(curr_dir->dir_entries[curr_dir->dir_header.dir_entry_amt - 1].dir_entry_name, name);
@@ -672,7 +672,6 @@ void fat32::cp_exp(const char* src, const char* dst) noexcept {
     std::vector<std::string> parts = lib_::split(src, '/');
 
     std::unique_ptr<dir_entr_ret_t> ssrc = parsePath(parts, 0x1);
-    const char* entr_name = parts[parts.size() - 1].c_str();
 
     if(!ssrc) {
         BUFFER << (LOG_str(log::WARNING, "src specified is invalid"));
@@ -711,7 +710,7 @@ void fat32::cd(const char* pth) noexcept {
 }
 
 void fat32::rm(std::vector<std::string>&tokens) noexcept {
-    for (int i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size(); i++) {
         std::vector<std::string> parts = lib_::split(tokens[i].c_str(), '/');
         std::unique_ptr<dir_entr_ret_t> entry = parsePath(parts, 0x1);
 
@@ -743,7 +742,7 @@ void fat32::touch(std::vector<std::string>& parts, char* payload, uint64_t size)
 
     if(size == 0 && parts.size() > 1) {
         std::string tmp = {};
-        for(int i = 1; i < parts.size(); i++) {
+        for(uint32_t i = 1; i < parts.size(); i++) {
             tmp += parts[i];
             tmp += " ";
         }
@@ -787,7 +786,7 @@ void fat32::ls() noexcept {
 
 fat32::dir_entry_t* fat32::find_entry(std::shared_ptr<dir_t>& dir, const char* entry, uint8_t shd_exst) const noexcept {
     dir_entry_t* ret = nullptr;
-    for (int i = 0; i < dir.get()->dir_header.dir_entry_amt; i++) {
+    for (uint32_t i = 0; i < dir.get()->dir_header.dir_entry_amt; i++) {
         if (strcmp(dir.get()->dir_entries[i].dir_entry_name, entry) == 0) {
             ret = &dir->dir_entries[i];
             break;
@@ -830,17 +829,13 @@ void fat32::print_super_block() const noexcept {
 
 void fat32::print_fat_table() const noexcept {
     printf("\n%s%s\n", "    Fat table\n", " --------------");
-    for (int i = 0; i < CLUSTER_AMT; i++) {
-        printf( "[%d : 0x%.8x]\n", i, m_fat_table[i]);
+    for (size_t i = 0; i < CLUSTER_AMT; i++) {
+        printf("[%ld : 0x%.8x]\n", i, m_fat_table[i]);
     }
 }
 
 void fat32::print_dir(dir_t & dir) noexcept {
     char buffer[1024 * 8];
-    if ((dir_t*)&dir == NULL) {
-        BUFFER << (LOG_str(log::WARNING, "specified directory to be printed is null"));
-        return;
-    }
 
     sprintf(buffer, "\r\nDirectory:        %s\n", dir.dir_header.dir_name);
     sprintf(buffer + strlen(buffer), "Start cluster:    %d\n", dir.dir_header.start_cluster_index);
@@ -849,7 +844,7 @@ void fat32::print_dir(dir_t & dir) noexcept {
 
     sprintf(buffer + strlen(buffer), "\n %s%4s%s%4s%s\n%s\n", "size", "", "start cluster", "", "name", "-------------------------------");
 
-    for (int i = 0; i < dir.dir_header.dir_entry_amt; i++) {
+    for (uint32_t i = 0; i < dir.dir_header.dir_entry_amt; i++) {
         sprintf(buffer + strlen(buffer), "%s%8s%02d%10s%s\n", convert_size(dir.dir_entries[i].dir_entry_size).c_str(), "", dir.dir_entries[i].start_cluster_index, "", dir.dir_entries[i].dir_entry_name);
     }
     

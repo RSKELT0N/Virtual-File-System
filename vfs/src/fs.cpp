@@ -74,7 +74,6 @@ void fs::store_ext_file_buffer(const char* path, std::shared_ptr<std::byte[]>& p
     rewind(file);
     fclose(file);
 
-    FILE* file_ = get_file_handlr(path, (char*)"r+");
     fwrite(payload.get(), get_file_size(path), sizeof(char), file);
     fclose(file);
 }
