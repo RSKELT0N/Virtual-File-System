@@ -143,7 +143,12 @@ void fat32::store_dir(std::shared_ptr<dir_t>& directory)  noexcept {
         return;
     }
 
-    uint32_t first_clu_index = attain_clu();
+    uint32_t first_clu_index;
+    if(directory->dir_header.start_cluster_index != UNDEF_START_CLUSTER) {
+        first_clu_index = attain_clu(directory->dir_header.start_cluster_index);
+    } else {
+        first_clu_index = attain_clu();
+    }
 
     directory->dir_header.start_cluster_index = first_clu_index;
     directory->dir_entries[0].start_cluster_index = first_clu_index;
@@ -525,6 +530,19 @@ uint32_t fat32::attain_clu() const noexcept {
     uint32_t rs = *m_free_clusters->begin();
     m_fat_table[rs] = ALLOCATED_CLUSTER;
     m_free_clusters->erase(m_free_clusters->begin());
+    return rs;
+}
+
+uint32_t fat32::attain_clu(int overrde) const noexcept {
+    uint32_t rs = overrde;
+
+    if(m_fat_table[rs] == ALLOCATED_CLUSTER) {
+        BUFFER << LOG_str(log::WARNING, "Fat32: Trying to attain an already allocated cluster");
+        rs = *m_free_clusters->begin();
+    }
+
+    m_fat_table[rs] = ALLOCATED_CLUSTER;
+    m_free_clusters->erase(std::next(m_free_clusters->begin(), rs));
     return rs;
 }
 

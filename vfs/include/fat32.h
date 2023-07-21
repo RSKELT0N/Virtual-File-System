@@ -15,7 +15,7 @@
 #define min_(a,b)            (int)((a) < (b) ? (a) : (b))
 #define DISK_NAME_LENGTH     (uint8_t)10
 #define DIR_NAME_LENGTH      (uint8_t)10
-#define UNDEF_START_CLUSTER  0
+#define UNDEF_START_CLUSTER  0xFFFFFFFF
 #define DIRECTORY            1
 #define NON_DIRECTORY        0
 
@@ -136,6 +136,7 @@ namespace VFS::IFS {
         size_t read_file(std::shared_ptr<dir_t>& dir, const char* entry_name, std::shared_ptr<std::byte[]>& buffer) noexcept;
 
         [[nodiscard]] uint32_t attain_clu() const noexcept;
+        [[nodiscard]] uint32_t attain_clu(int) const noexcept;
         [[nodiscard]] uint32_t n_free_clusters(const uint32_t& req) const noexcept;
         std::unique_ptr<std::vector<uint32_t>> get_list_of_clu(const uint32_t& start_clu) noexcept;
         void rm_entr_mem(std::shared_ptr<dir_t>& dir, const char* name) noexcept;
